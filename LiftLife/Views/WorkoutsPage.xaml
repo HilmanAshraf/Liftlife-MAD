@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="LiftLife.Views.WorkoutsPage"
+             Title="Workouts"
+             BackgroundColor="{StaticResource AppBackground}">
+
+    <Grid RowDefinitions="Auto,*" Padding="20,16">
+        <Label Grid.Row="0" Text="Workout Routines" Style="{StaticResource ScreenTitle}" />
+        <VerticalStackLayout Grid.Row="1" VerticalOptions="Center" Spacing="8">
+            <Label Text="Routine Hub" Style="{StaticResource CardTitle}" HorizontalOptions="Center" />
+            <Label Text="Coming on Day 4" Style="{StaticResource SubtleText}" HorizontalOptions="Center" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>
