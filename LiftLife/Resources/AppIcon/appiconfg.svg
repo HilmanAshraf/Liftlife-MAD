@@ -2,6 +2,13 @@
 <svg width="456" height="456" viewBox="0 0 456 456" fill="none" xmlns="http://www.w3.org/2000/svg">
   <!-- Lime squircle -->
   <rect x="128" y="120" width="200" height="200" rx="56" fill="#E9F558"/>
-  <!-- Stylised L -->
-  <text x="228" y="258" font-family="Georgia, 'Times New Roman', serif" font-size="150" font-style="italic" font-weight="700" fill="#0B0B0F" text-anchor="middle">L</text>
+  <!-- Stylised "L" drawn as filled paths -->
+  <path d="M196 168
+           h28
+           v74
+           h52
+           v28
+           h-80
+           z"
+        fill="#0B0B0F"/>
 </svg>

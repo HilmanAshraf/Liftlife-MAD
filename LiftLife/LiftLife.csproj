@@ -28,6 +28,11 @@
 
 		<WindowsPackageType>None</WindowsPackageType>
 
+		<!-- The installed .NET for iOS 27.0 workload requires exactly Xcode 27.0, but the
+		     machine has Xcode 27.1 (same major SDK band, newer minor). Skip the strict
+		     major.minor equality check so the build uses the installed Xcode 27.1. -->
+		<ValidateXcodeVersion>false</ValidateXcodeVersion>
+
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">17.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>

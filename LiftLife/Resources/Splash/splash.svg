@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect x="48" y="48" width="160" height="160" rx="44" fill="#E9F558"/>
-  <text x="128" y="176" font-family="Georgia, 'Times New Roman', serif" font-size="120" font-style="italic" font-weight="700" fill="#0B0B0F" text-anchor="middle">L</text>
+  <!-- Stylised serif "L" drawn as a filled path -->
+  <path d="M104 92
+           h22
+           v58
+           h40
+           v22
+           h-62
+           z"
+        fill="#0B0B0F"/>
+  <!-- small serif foot accent -->
+  <rect x="104" y="92" width="34" height="12" rx="3" fill="#0B0B0F"/>
 </svg>
