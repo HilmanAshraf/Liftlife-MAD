@@ -20,6 +20,7 @@ public static class MauiProgram
 		// ---- Dependency injection ----
 		// Database is a singleton so the SQLite connection is shared app-wide.
 		builder.Services.AddSingleton<LiftLifeDatabase>();
+		builder.Services.AddSingleton<LiftLifeRepository>();
 
 		// Pages
 		builder.Services.AddTransient<CommunityPage>();

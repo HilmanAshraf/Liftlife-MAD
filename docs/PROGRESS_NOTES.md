@@ -103,6 +103,16 @@ the splash screen, and the SQLite plumbing.
 
 - **`Resources/Images/tab_*.svg`** — the four bottom-tab icons.
 
+### Platform decision & source control (end of Day 1)
+- **Target platform set to iOS** — I use an iPhone, and iOS is the natural fit for a Mac
+  dev setup. Android and Mac Catalyst are still available as secondary build targets, but
+  iOS is primary.
+- **Source control:** the whole project is in Git and pushed to GitHub at
+  `https://github.com/HilmanAshraf/Liftlife-MAD.git` (branch `main`). Build artifacts
+  (`bin/`, `obj/`) and the runtime SQLite file are excluded via `.gitignore`.
+- **One-time local setup to build iOS** (run once in Terminal):
+  `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`
+
 ### What I can demo after Day 1
 The app launches → splash screen with the logo → after 2 seconds it lands on the
 bottom-tab dashboard, and I can tap between Community / Workouts / Nutrition / About.
@@ -125,3 +135,63 @@ bottom-tab dashboard, and I can tap between Community / Workouts / Nutrition / A
 ## DAY 5 — (planned) Active Workout Session + Quick Swap engine + rest timer
 ## DAY 6 — (planned) Daily Nutrition Hub + food logging + macro logic
 ## DAY 7 — (planned) About page, icon/splash polish, testing, final report
+
+---
+
+## DAY 2 — Data layer: models, SQLite tables, repository, seed data
+
+**Goal:** Build the complete offline data foundation so every feature screen has
+something real to read from and write to. This is the "Storage + data binding"
+backbone the rubric rewards.
+
+### What I built and why
+
+**Models (`Models/`)** — plain C# classes, each marked as a SQLite `[Table]`:
+- **`Station`** — a gym machine with a live status (Free / Busy / Out of Order), who
+  reported it, and when. Has helper properties (`StatusLabel`, `RelativeUpdated` like
+  "2m ago") so the UI stays simple.
+- **`Exercise`** — the master exercise catalogue. Each has a **muscle group** and
+  **equipment** type — these two fields are what make the swap engine work.
+- **`Routine`** + **`RoutineExercise`** — a saved workout split and the exercises in it
+  (with target sets/reps/rest and personal setup notes).
+- **`WorkoutSession`** + **`SetLog`** — a logged workout and each individual set
+  (weight × reps). Session stores total volume for history.
+- **`FoodItem`** + **`MealLog`** — the food catalogue and foods logged per day/meal.
+- **`UserSettings`** — one row holding baseline macro targets and today's day type.
+  It **computes** training-day vs rest-day targets automatically (rest day = fewer
+  calories and carbs). This is the "adaptive nutrition" logic.
+- **`Enums.cs`** — `StationStatus`, `DayType`, `MealCategory`.
+
+**`Data/LiftLifeDatabase.cs`** — opens the SQLite file, creates all tables, and
+**seeds default data on first launch**: ~20 exercises across muscle groups, 7 gym
+stations, 10 common foods, default macro targets, and one sample "Push Day A" routine.
+Seeding checks if a table is empty first, so it only happens once.
+
+**`Data/LiftLifeRepository.cs`** — all the data operations the screens call, so pages
+never touch SQL directly. Highlights:
+- station listing + category filter + status update + crowd-density calculation
+- **the swap engine** (`GetSwapOptionsAsync`): given an exercise, it finds other
+  exercises that train the **same muscle group**, and flags each with whether matching
+  equipment is currently free in the gym. This is the core "crowded gym" innovation.
+- routine CRUD, workout session start/complete (auto-sums volume), nutrition logging.
+
+**`MauiProgram.cs`** — registered the database and repository for dependency injection
+so any page can request them.
+
+### How the swap engine works (likely a key question)
+Every exercise has a `MuscleGroup`. When a station is busy, I ask the repository for
+all other exercises with the *same* muscle group. I then cross-check the live station
+statuses: if an alternative's equipment type has a free station, it's marked
+"Free in Gym". So the suggestion is both **biomechanically valid** (same muscle) and
+**practical** (equipment actually available). All of this runs locally against SQLite —
+no internet needed.
+
+### Likely questions & my answers
+- **Q: Where does data persist?** A local SQLite database file (`liftlife.db3`) in the
+  app's private storage. It survives app restarts and works fully offline.
+- **Q: How is the database created?** On first launch `CreateTableAsync` builds each
+  table from the model classes, then seed methods insert starter data.
+- **Q: Why a repository instead of querying in the page?** Keeps data logic in one place,
+  makes pages simpler, and is easy to explain/test.
+- **Q: What makes rest-day vs training-day targets change?** `UserSettings` stores a
+  baseline; computed properties scale calories/carbs down on rest days. Protein stays high.
