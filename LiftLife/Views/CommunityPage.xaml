@@ -13,7 +13,6 @@
 
         <VerticalStackLayout Grid.Row="1" VerticalOptions="Center" Spacing="8">
             <Label Text="Community Station Hub" Style="{StaticResource CardTitle}" HorizontalOptions="Center" />
-            <Label Text="Coming on Day 3" Style="{StaticResource SubtleText}" HorizontalOptions="Center" />
         </VerticalStackLayout>
     </Grid>
 </ContentPage>

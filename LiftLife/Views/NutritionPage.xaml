@@ -9,7 +9,6 @@
         <Label Grid.Row="0" Text="Daily Nutrition" Style="{StaticResource ScreenTitle}" />
         <VerticalStackLayout Grid.Row="1" VerticalOptions="Center" Spacing="8">
             <Label Text="Nutrition Hub" Style="{StaticResource CardTitle}" HorizontalOptions="Center" />
-            <Label Text="Coming on Day 6" Style="{StaticResource SubtleText}" HorizontalOptions="Center" />
         </VerticalStackLayout>
     </Grid>
 </ContentPage>

@@ -9,7 +9,6 @@
         <Label Grid.Row="0" Text="About LiftLife" Style="{StaticResource ScreenTitle}" />
         <VerticalStackLayout Grid.Row="1" VerticalOptions="Center" Spacing="8">
             <Label Text="About Page" Style="{StaticResource CardTitle}" HorizontalOptions="Center" />
-            <Label Text="Coming on Day 7" Style="{StaticResource SubtleText}" HorizontalOptions="Center" />
         </VerticalStackLayout>
     </Grid>
 </ContentPage>
