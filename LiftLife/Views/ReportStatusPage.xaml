@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
+             x:Class="LiftLife.Views.ReportStatusPage"
+             ios:Page.ModalPresentationStyle="PageSheet"
+             BackgroundColor="{StaticResource AppBackground}">
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="20,24,20,24" RowSpacing="18">
+
+        <!-- Header: close button + title -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
+            <Button Text="✕"
+                    WidthRequest="40" HeightRequest="40" CornerRadius="20" Padding="0"
+                    BackgroundColor="{StaticResource SurfaceElevated}"
+                    TextColor="{StaticResource TextPrimary}"
+                    FontSize="16"
+                    Clicked="OnCloseClicked" />
+            <VerticalStackLayout Grid.Column="1" HorizontalOptions="Center" VerticalOptions="Center">
+                <Label Text="Update Station Status" Style="{StaticResource CardTitle}" HorizontalOptions="Center" />
+                <Label x:Name="StationNameLabel" Style="{StaticResource SubtleText}" HorizontalOptions="Center" />
+            </VerticalStackLayout>
+            <!-- empty column keeps the title centred -->
+            <BoxView Grid.Column="2" WidthRequest="40" Color="Transparent" />
+        </Grid>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="12">
+
+                <!-- Availability options (tap to select) -->
+                <Border x:Name="FreeOption" Style="{StaticResource Card}">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnFreeTapped" />
+                    </Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <Ellipse Fill="{StaticResource StatusFree}" WidthRequest="12" HeightRequest="12" VerticalOptions="Center" />
+                        <Label Grid.Column="1" Text="Available / Station Free" Style="{StaticResource CardTitle}" FontSize="15" />
+                    </Grid>
+                </Border>
+
+                <Border x:Name="BusyOption" Style="{StaticResource Card}">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnBusyTapped" />
+                    </Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <Ellipse Fill="{StaticResource StatusBusy}" WidthRequest="12" HeightRequest="12" VerticalOptions="Center" />
+                        <Label Grid.Column="1" Text="Busy / In Use" Style="{StaticResource CardTitle}" FontSize="15" />
+                    </Grid>
+                </Border>
+
+                <Border x:Name="BrokenOption" Style="{StaticResource Card}">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnBrokenTapped" />
+                    </Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <Ellipse Fill="{StaticResource StatusOutOfOrder}" WidthRequest="12" HeightRequest="12" VerticalOptions="Center" />
+                        <Label Grid.Column="1" Text="Out of Order / Damaged" Style="{StaticResource CardTitle}" FontSize="15" />
+                    </Grid>
+                </Border>
+
+                <!-- Fault description -->
+                <Label Text="NOTE (required for Out of Order)" Style="{StaticResource MutedCaption}" Margin="4,10,0,0" />
+                <Border Style="{StaticResource Card}" Padding="12,4">
+                    <Editor x:Name="NoteEditor"
+                            Placeholder="e.g. Pulley cable snapped"
+                            PlaceholderColor="{StaticResource TextMuted}"
+                            TextColor="{StaticResource TextPrimary}"
+                            BackgroundColor="Transparent"
+                            AutoSize="TextChanges"
+                            MinimumHeightRequest="90"
+                            MaxLength="200" />
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Button Grid.Row="2"
+                Text="SUBMIT STATUS UPDATE"
+                Style="{StaticResource PrimaryButton}"
+                Clicked="OnSubmitClicked" />
+    </Grid>
+</ContentPage>

@@ -1,4 +1,5 @@
 ﻿using LiftLife.Data;
+using LiftLife.ViewModels;
 using LiftLife.Views;
 using Microsoft.Extensions.Logging;
 
@@ -21,6 +22,9 @@ public static class MauiProgram
 		// Database is a singleton so the SQLite connection is shared app-wide.
 		builder.Services.AddSingleton<LiftLifeDatabase>();
 		builder.Services.AddSingleton<LiftLifeRepository>();
+
+		// ViewModels
+		builder.Services.AddTransient<CommunityViewModel>();
 
 		// Pages
 		builder.Services.AddTransient<CommunityPage>();

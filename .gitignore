@@ -37,3 +37,6 @@ Platforms/**/obj/
 # ---- Local SQLite (runtime data, not source) ----
 *.db3
 *.sqlite
+
+# ---- local simulator screenshots ----
+.screens/

@@ -1,18 +1,135 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:LiftLife.ViewModels"
+             xmlns:models="clr-namespace:LiftLife.Models"
+             xmlns:conv="clr-namespace:LiftLife.Converters"
              x:Class="LiftLife.Views.CommunityPage"
+             x:DataType="vm:CommunityViewModel"
              Title="Community"
+             Shell.NavBarIsVisible="False"
              BackgroundColor="{StaticResource AppBackground}">
 
-    <Grid RowDefinitions="Auto,*" Padding="20,16">
+    <ContentPage.Resources>
+        <conv:StatusToColorConverter x:Key="StatusBg" />
+        <conv:StatusToTextColorConverter x:Key="StatusFg" />
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="14" Padding="20,12,20,0">
+
+        <!-- Top app bar: app title + facility geotag -->
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
             <Label Text="LiftLife" Style="{StaticResource ScreenTitle}" VerticalOptions="Center" />
             <Label Grid.Column="1" Text="📍 Campus Gym" Style="{StaticResource SubtleText}" VerticalOptions="Center" />
         </Grid>
 
-        <VerticalStackLayout Grid.Row="1" VerticalOptions="Center" Spacing="8">
-            <Label Text="Community Station Hub" Style="{StaticResource CardTitle}" HorizontalOptions="Center" />
-        </VerticalStackLayout>
+        <!-- Crowd density banner -->
+        <Border Grid.Row="1" Style="{StaticResource CardElevated}">
+            <VerticalStackLayout Spacing="6">
+                <Label Text="{Binding DensityTitle}" Style="{StaticResource CardTitle}" FontSize="15" />
+                <Label Text="{Binding DensitySubtitle}" Style="{StaticResource SubtleText}" />
+                <ProgressBar Progress="{Binding DensityProgress}"
+                             ProgressColor="{StaticResource Primary}"
+                             Margin="0,6,0,0" />
+            </VerticalStackLayout>
+        </Border>
+
+        <!-- Category filter chips (tap gesture) -->
+        <ScrollView Grid.Row="2" Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+            <HorizontalStackLayout Spacing="8" BindableLayout.ItemsSource="{Binding Categories}">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CategoryChip">
+                        <Border Padding="18,8"
+                                StrokeThickness="1"
+                                Stroke="{StaticResource StrokeColor}"
+                                BackgroundColor="{StaticResource SurfaceCard}">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="18" />
+                            </Border.StrokeShape>
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                                    <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                                    <Setter Property="Stroke" Value="{StaticResource Primary}" />
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnChipTapped" />
+                            </Border.GestureRecognizers>
+                            <Label Text="{Binding Name}" FontSize="13" FontAttributes="Bold"
+                                   TextColor="{StaticResource TextPrimary}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
+                                        <Setter Property="TextColor" Value="{StaticResource PrimaryDarkText}" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </HorizontalStackLayout>
+        </ScrollView>
+
+        <!-- Station status cards with pull-to-refresh -->
+        <RefreshView Grid.Row="3"
+                     Command="{Binding RefreshCommand}"
+                     IsRefreshing="{Binding IsRefreshing}"
+                     RefreshColor="{StaticResource Primary}">
+            <CollectionView ItemsSource="{Binding Stations}" SelectionMode="None">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
+                </CollectionView.ItemsLayout>
+
+                <CollectionView.EmptyView>
+                    <Label Text="No stations in this category."
+                           Style="{StaticResource SubtleText}"
+                           HorizontalOptions="Center" Margin="0,40,0,0" />
+                </CollectionView.EmptyView>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:Station">
+                        <Border Style="{StaticResource Card}">
+                            <VerticalStackLayout Spacing="12">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <VerticalStackLayout Spacing="3">
+                                        <Label Text="{Binding Name}" Style="{StaticResource CardTitle}" />
+                                        <Label Text="{Binding DetailLine}" Style="{StaticResource SubtleText}" />
+                                    </VerticalStackLayout>
+
+                                    <!-- Status badge -->
+                                    <Border Grid.Column="1"
+                                            BackgroundColor="{Binding Status, Converter={StaticResource StatusBg}}"
+                                            StrokeThickness="0"
+                                            Padding="12,5"
+                                            VerticalOptions="Start">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="12" />
+                                        </Border.StrokeShape>
+                                        <Label Text="{Binding StatusLabel}"
+                                               FontSize="11" FontAttributes="Bold"
+                                               TextColor="{Binding Status, Converter={StaticResource StatusFg}}" />
+                                    </Border>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                                    <Button Text="{Binding PrimaryActionText}"
+                                            Style="{StaticResource PrimaryButton}"
+                                            HeightRequest="44" FontSize="13"
+                                            Clicked="OnPrimaryActionClicked" />
+                                    <Button Grid.Column="1"
+                                            Text="Update Status"
+                                            Style="{StaticResource OutlineButton}"
+                                            Clicked="OnUpdateStatusClicked" />
+                                </Grid>
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+
+                <!-- Spacer so the last card isn't hidden behind the floating tab bar -->
+                <CollectionView.Footer>
+                    <BoxView HeightRequest="110" Color="Transparent" />
+                </CollectionView.Footer>
+            </CollectionView>
+        </RefreshView>
     </Grid>
 </ContentPage>

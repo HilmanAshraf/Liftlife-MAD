@@ -45,22 +45,57 @@ public class LiftLifeRepository
     }
 
     /// <summary>
-    /// Rough crowd-density estimate: share of stations currently busy, as a percentage.
+    /// Crowd-density estimate: share of usable stations (not out of order) that are busy.
     /// </summary>
-    public async Task<(int percent, string label, int busyCount)> GetCrowdDensityAsync()
+    public async Task<(int percent, string label, int busyCount, int usableCount)> GetCrowdDensityAsync()
     {
         var conn = await _db.GetConnectionAsync();
         var all = await conn.Table<Station>().ToListAsync();
-        if (all.Count == 0) return (0, "QUIET", 0);
-        var busy = all.Count(s => s.Status == StationStatus.Busy);
-        var percent = (int)Math.Round(busy * 100.0 / all.Count);
+        var usable = all.Where(s => s.Status != StationStatus.OutOfOrder).ToList();
+        if (usable.Count == 0) return (0, "QUIET", 0, 0);
+        var busy = usable.Count(s => s.Status == StationStatus.Busy);
+        var percent = (int)Math.Round(busy * 100.0 / usable.Count);
         var label = percent switch
         {
             >= 70 => "BUSY",
             >= 40 => "MODERATE",
             _ => "QUIET"
         };
-        return (percent, label, busy);
+        return (percent, label, busy, usable.Count);
+    }
+
+    /// <summary>
+    /// Swap engine entry point from the Community Hub: when a station is busy or broken,
+    /// suggest exercises for the same muscle group that use different equipment.
+    /// </summary>
+    public async Task<List<ExerciseSwapOption>> GetAlternativesForStationAsync(Station station)
+    {
+        var conn = await _db.GetConnectionAsync();
+        var alternatives = await conn.Table<Exercise>()
+            .Where(e => e.MuscleGroup == station.MuscleGroup)
+            .ToListAsync();
+        var stations = await conn.Table<Station>().ToListAsync();
+
+        return alternatives
+            // Skip exercises that need the same equipment as the unavailable station.
+            .Where(e => !station.Name.Contains(e.Equipment, StringComparison.OrdinalIgnoreCase))
+            .Select(e => new ExerciseSwapOption { Exercise = e, IsEquipmentFree = IsEquipmentFree(e, stations) })
+            .OrderByDescending(o => o.IsEquipmentFree)
+            .ToList();
+    }
+
+    /// <summary>
+    /// An alternative counts as available if a matching station for that muscle group is
+    /// free, or if it uses dumbbells/machines (assumed to have several units in the gym).
+    /// </summary>
+    private static bool IsEquipmentFree(Exercise exercise, List<Station> stations)
+    {
+        var matchingFree = stations.Any(s =>
+            s.MuscleGroup == exercise.MuscleGroup &&
+            s.Status == StationStatus.Free &&
+            s.Name.Contains(exercise.Equipment, StringComparison.OrdinalIgnoreCase));
+
+        return matchingFree || exercise.Equipment is "Dumbbell" or "Machine";
     }
 
     // ---------------- Exercises & swap engine ----------------
@@ -88,21 +123,10 @@ public class LiftLifeRepository
 
         var stations = await conn.Table<Station>().ToListAsync();
 
-        return alternatives.Select(alt =>
-        {
-            // Consider a substitute "available" if any station using the same
-            // equipment for that muscle group is currently free.
-            var free = stations.Any(s =>
-                s.MuscleGroup == alt.MuscleGroup &&
-                s.Status == StationStatus.Free &&
-                s.Name.Contains(alt.Equipment, StringComparison.OrdinalIgnoreCase));
-
-            return new ExerciseSwapOption
-            {
-                Exercise = alt,
-                IsEquipmentFree = free || alt.Equipment is "Dumbbell" or "Machine"
-            };
-        }).ToList();
+        return alternatives
+            .Select(alt => new ExerciseSwapOption { Exercise = alt, IsEquipmentFree = IsEquipmentFree(alt, stations) })
+            .OrderByDescending(o => o.IsEquipmentFree)
+            .ToList();
     }
 
     // ---------------- Routines ----------------
