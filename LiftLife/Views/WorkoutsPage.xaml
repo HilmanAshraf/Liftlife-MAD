@@ -1,14 +1,97 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:LiftLife.ViewModels"
+             xmlns:models="clr-namespace:LiftLife.Models"
              x:Class="LiftLife.Views.WorkoutsPage"
+             x:DataType="vm:WorkoutsViewModel"
              Title="Workouts"
+             Shell.NavBarIsVisible="False"
              BackgroundColor="{StaticResource AppBackground}">
 
-    <Grid RowDefinitions="Auto,*" Padding="20,16">
-        <Label Grid.Row="0" Text="Workout Routines" Style="{StaticResource ScreenTitle}" />
-        <VerticalStackLayout Grid.Row="1" VerticalOptions="Center" Spacing="8">
-            <Label Text="Routine Hub" Style="{StaticResource CardTitle}" HorizontalOptions="Center" />
-        </VerticalStackLayout>
+    <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="14" Padding="20,12,20,0">
+
+        <!-- Title + New routine button -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+            <Label Text="Workout Routines" Style="{StaticResource ScreenTitle}" VerticalOptions="Center" />
+            <Button Grid.Column="1"
+                    Text="+ New"
+                    Style="{StaticResource PrimaryButton}"
+                    HeightRequest="38" Padding="16,0" FontSize="14" CornerRadius="19"
+                    VerticalOptions="Center"
+                    Clicked="OnNewClicked" />
+        </Grid>
+
+        <!-- Session volume history -->
+        <Border Grid.Row="1" Style="{StaticResource CardElevated}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                <Label Text="📈" FontSize="22" VerticalOptions="Center" />
+                <VerticalStackLayout Grid.Column="1" Spacing="2">
+                    <Label Text="LAST SESSION" Style="{StaticResource MutedCaption}" />
+                    <Label Text="{Binding HistoryText}" Style="{StaticResource BodyText}" FontAttributes="Bold" />
+                </VerticalStackLayout>
+            </Grid>
+        </Border>
+
+        <Label Grid.Row="2" Text="MY ROUTINES  •  swipe left to delete" Style="{StaticResource MutedCaption}" Margin="4,4,0,0" />
+
+        <RefreshView Grid.Row="3"
+                     Command="{Binding RefreshCommand}"
+                     IsRefreshing="{Binding IsRefreshing}"
+                     RefreshColor="{StaticResource Primary}">
+            <CollectionView ItemsSource="{Binding Routines}" SelectionMode="None">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
+                </CollectionView.ItemsLayout>
+
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout Spacing="6" Margin="0,40,0,0" HorizontalOptions="Center">
+                        <Label Text="No routines yet" Style="{StaticResource CardTitle}" HorizontalOptions="Center" />
+                        <Label Text="Tap + New to build your first routine." Style="{StaticResource SubtleText}" HorizontalOptions="Center" />
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:Routine">
+                        <!-- Swipe gesture: swipe left to reveal Delete -->
+                        <SwipeView BackgroundColor="Transparent">
+                            <SwipeView.RightItems>
+                                <SwipeItems Mode="Reveal">
+                                    <SwipeItem Text="Delete"
+                                               BackgroundColor="{StaticResource StatusBusy}"
+                                               Invoked="OnDeleteInvoked" />
+                                </SwipeItems>
+                            </SwipeView.RightItems>
+
+                            <Border Style="{StaticResource Card}">
+                                <VerticalStackLayout Spacing="12">
+                                    <VerticalStackLayout Spacing="3">
+                                        <Label Text="{Binding Name}" Style="{StaticResource CardTitle}" FontSize="19" />
+                                        <Label Text="{Binding Focus}" Style="{StaticResource BodyText}" TextColor="{StaticResource Primary}" />
+                                        <Label Text="{Binding SummaryLine}" Style="{StaticResource SubtleText}" />
+                                    </VerticalStackLayout>
+
+                                    <Grid ColumnDefinitions="2*,*" ColumnSpacing="10">
+                                        <Button Text="START WORKOUT SESSION"
+                                                Style="{StaticResource PrimaryButton}"
+                                                HeightRequest="46" FontSize="13"
+                                                Clicked="OnStartClicked" />
+                                        <Button Grid.Column="1"
+                                                Text="Edit"
+                                                Style="{StaticResource OutlineButton}"
+                                                HeightRequest="46"
+                                                Clicked="OnEditClicked" />
+                                    </Grid>
+                                </VerticalStackLayout>
+                            </Border>
+                        </SwipeView>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+
+                <CollectionView.Footer>
+                    <ContentView HeightRequest="110" />
+                </CollectionView.Footer>
+            </CollectionView>
+        </RefreshView>
     </Grid>
 </ContentPage>

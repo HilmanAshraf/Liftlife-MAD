@@ -21,7 +21,7 @@
                 <Label x:Name="StationNameLabel" Style="{StaticResource SubtleText}" HorizontalOptions="Center" />
             </VerticalStackLayout>
             <!-- empty column keeps the title centred -->
-            <BoxView Grid.Column="2" WidthRequest="40" Color="Transparent" />
+            <ContentView Grid.Column="2" WidthRequest="40" />
         </Grid>
 
         <ScrollView Grid.Row="1">

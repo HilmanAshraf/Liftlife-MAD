@@ -134,7 +134,7 @@ public class LiftLifeRepository
     public async Task<List<Routine>> GetRoutinesAsync()
     {
         var conn = await _db.GetConnectionAsync();
-        var routines = await conn.Table<Routine>().OrderByDescending(r => r.CreatedAt).ToListAsync();
+        var routines = await conn.Table<Routine>().OrderBy(r => r.Id).ToListAsync();
         foreach (var r in routines)
             r.ExerciseCount = await conn.Table<RoutineExercise>().Where(x => x.RoutineId == r.Id).CountAsync();
         return routines;
@@ -180,6 +180,31 @@ public class LiftLifeRepository
         var conn = await _db.GetConnectionAsync();
         if (item.Id == 0) await conn.InsertAsync(item);
         else await conn.UpdateAsync(item);
+    }
+
+    public async Task<Routine?> GetRoutineAsync(int routineId)
+    {
+        var conn = await _db.GetConnectionAsync();
+        return await conn.FindAsync<Routine>(routineId);
+    }
+
+    /// <summary>
+    /// Saves the routine's exercise list in its current order. Simplest correct approach:
+    /// remove the old rows for this routine, then insert the new list with fresh order indexes.
+    /// </summary>
+    public async Task ReplaceRoutineExercisesAsync(int routineId, IList<RoutineExercise> items)
+    {
+        var conn = await _db.GetConnectionAsync();
+        await conn.ExecuteAsync("DELETE FROM routine_exercises WHERE RoutineId = ?", routineId);
+
+        for (var i = 0; i < items.Count; i++)
+        {
+            var item = items[i];
+            item.Id = 0;
+            item.RoutineId = routineId;
+            item.OrderIndex = i;
+            await conn.InsertAsync(item);
+        }
     }
 
     public async Task DeleteRoutineAsync(int routineId)

@@ -149,23 +149,64 @@ public class LiftLifeDatabase
 
     private static async Task SeedSampleRoutineAsync(SQLiteAsyncConnection db)
     {
-        if (await db.Table<Routine>().CountAsync() > 0) return;
-
-        var push = new Routine { Name = "Push Day A", Focus = "Chest / Shoulders / Triceps", EstimatedMinutes = 50 };
-        await db.InsertAsync(push);
-
-        // Look up a few seeded exercises by name to attach to the routine.
-        async Task<int> IdOf(string name) =>
-            (await db.Table<Exercise>().Where(e => e.Name == name).FirstOrDefaultAsync())?.Id ?? 0;
-
-        var items = new List<RoutineExercise>
+        // Each sample routine is only added if a routine with that name doesn't exist yet.
+        await SeedRoutineAsync(db, "Push Day A", "Chest / Shoulders / Triceps", 50, new[]
         {
-            new() { RoutineId = push.Id, ExerciseId = await IdOf("Barbell Bench Press"),     OrderIndex = 0, TargetSets = 3, TargetReps = 8,  RestSeconds = 120 },
-            new() { RoutineId = push.Id, ExerciseId = await IdOf("Incline Dumbbell Press"),  OrderIndex = 1, TargetSets = 3, TargetReps = 10, RestSeconds = 90 },
-            new() { RoutineId = push.Id, ExerciseId = await IdOf("Machine Shoulder Press"),  OrderIndex = 2, TargetSets = 3, TargetReps = 10, RestSeconds = 75 },
-            new() { RoutineId = push.Id, ExerciseId = await IdOf("Cable Lateral Raise"),     OrderIndex = 3, TargetSets = 3, TargetReps = 15, RestSeconds = 60 },
-            new() { RoutineId = push.Id, ExerciseId = await IdOf("Triceps Rope Pushdown"),   OrderIndex = 4, TargetSets = 3, TargetReps = 12, RestSeconds = 60 },
-        };
-        await db.InsertAllAsync(items);
+            ("Barbell Bench Press", 3, 8, 120),
+            ("Incline Dumbbell Press", 3, 10, 90),
+            ("Machine Shoulder Press", 3, 10, 75),
+            ("Cable Lateral Raise", 3, 15, 60),
+            ("Triceps Rope Pushdown", 3, 12, 60),
+        });
+
+        await SeedRoutineAsync(db, "Pull Day B", "Back / Biceps", 45, new[]
+        {
+            ("Lat Pulldown", 3, 10, 90),
+            ("Seated Cable Row", 3, 10, 90),
+            ("Dumbbell Row", 3, 10, 75),
+            ("Barbell Curl", 3, 12, 60),
+        });
+
+        // One completed past session so the history card has data on first launch.
+        if (await db.Table<WorkoutSession>().CountAsync() == 0)
+        {
+            var pull = await db.Table<Routine>().Where(r => r.Name == "Pull Day B").FirstOrDefaultAsync();
+            var yesterday = DateTime.Today.AddDays(-1).AddHours(18);
+            await db.InsertAsync(new WorkoutSession
+            {
+                RoutineId = pull?.Id ?? 0,
+                RoutineName = "Pull Day B",
+                StartedAt = yesterday,
+                CompletedAt = yesterday.AddMinutes(47),
+                TotalVolumeKg = 5420,
+                IsCompleted = true
+            });
+        }
+    }
+
+    private static async Task SeedRoutineAsync(SQLiteAsyncConnection db, string name, string focus, int minutes,
+        (string exercise, int sets, int reps, int rest)[] plan)
+    {
+        if (await db.Table<Routine>().Where(r => r.Name == name).CountAsync() > 0) return;
+
+        var routine = new Routine { Name = name, Focus = focus, EstimatedMinutes = minutes };
+        await db.InsertAsync(routine);
+
+        for (var i = 0; i < plan.Length; i++)
+        {
+            var (exerciseName, sets, reps, rest) = plan[i];
+            var exercise = await db.Table<Exercise>().Where(e => e.Name == exerciseName).FirstOrDefaultAsync();
+            if (exercise is null) continue;
+
+            await db.InsertAsync(new RoutineExercise
+            {
+                RoutineId = routine.Id,
+                ExerciseId = exercise.Id,
+                OrderIndex = i,
+                TargetSets = sets,
+                TargetReps = reps,
+                RestSeconds = rest
+            });
+        }
     }
 }

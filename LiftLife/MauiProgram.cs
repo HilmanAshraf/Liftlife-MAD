@@ -25,12 +25,22 @@ public static class MauiProgram
 
 		// ViewModels
 		builder.Services.AddTransient<CommunityViewModel>();
+		builder.Services.AddTransient<WorkoutsViewModel>();
+		builder.Services.AddTransient<RoutineBuilderViewModel>();
 
 		// Pages
 		builder.Services.AddTransient<CommunityPage>();
 		builder.Services.AddTransient<WorkoutsPage>();
 		builder.Services.AddTransient<NutritionPage>();
 		builder.Services.AddTransient<AboutPage>();
+
+		// Remove the native iOS text-field border so our own rounded boxes are the only border.
+		Microsoft.Maui.Handlers.EntryHandler.Mapper.AppendToMapping("NoNativeBorder", (handler, view) =>
+		{
+#if IOS || MACCATALYST
+			handler.PlatformView.BorderStyle = UIKit.UITextBorderStyle.None;
+#endif
+		});
 
 #if DEBUG
 		builder.Logging.AddDebug();

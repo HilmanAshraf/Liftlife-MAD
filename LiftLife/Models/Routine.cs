@@ -55,6 +55,9 @@ public class RoutineExercise
     /// <summary>Personal machine setup note, e.g. "Seat height 4, pin 60kg".</summary>
     public string? SetupNote { get; set; }
 
+    /// <summary>1-based position shown in the builder ("1", "2", ...).</summary>
+    [Ignore] public int Position => OrderIndex + 1;
+
     // Hydrated from the exercise catalogue for display (not stored).
     [Ignore] public string ExerciseName { get; set; } = string.Empty;
     [Ignore] public string MuscleGroup { get; set; } = string.Empty;

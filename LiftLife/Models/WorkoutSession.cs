@@ -24,6 +24,20 @@ public class WorkoutSession
     public double TotalVolumeKg { get; set; }
 
     public bool IsCompleted { get; set; }
+
+    /// <summary>History line for the Routine Hub, e.g. "Yesterday: Pull Day B • 5,420 kg logged".</summary>
+    [Ignore]
+    public string HistoryText
+    {
+        get
+        {
+            var date = (CompletedAt ?? StartedAt).Date;
+            var day = date == DateTime.Today ? "Today"
+                : date == DateTime.Today.AddDays(-1) ? "Yesterday"
+                : date.ToString("dd MMM");
+            return $"{day}: {RoutineName} • {TotalVolumeKg:N0} kg logged";
+        }
+    }
 }
 
 /// <summary>

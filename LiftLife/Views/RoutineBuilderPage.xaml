@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:LiftLife.ViewModels"
+             xmlns:models="clr-namespace:LiftLife.Models"
+             x:Class="LiftLife.Views.RoutineBuilderPage"
+             x:DataType="vm:RoutineBuilderViewModel"
+             Title="{Binding PageTitle}"
+             BackgroundColor="{StaticResource AppBackground}">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Save" Clicked="OnSaveClicked" />
+    </ContentPage.ToolbarItems>
+
+    <ContentPage.Resources>
+        <!-- Small boxed numeric input used for sets / reps / rest -->
+        <Style x:Key="FieldBox" TargetType="Border">
+            <Setter Property="BackgroundColor" Value="{StaticResource SurfaceElevated}" />
+            <Setter Property="Stroke" Value="{StaticResource StrokeColor}" />
+            <Setter Property="StrokeThickness" Value="1" />
+            <Setter Property="Padding" Value="10,0" />
+            <Setter Property="StrokeShape">
+                <Setter.Value>
+                    <RoundRectangle CornerRadius="10" />
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <!-- extra bottom padding keeps the Save button clear of the floating tab bar -->
+        <VerticalStackLayout Padding="20,16,20,130" Spacing="14">
+
+            <!-- Routine details -->
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="ROUTINE NAME" Style="{StaticResource MutedCaption}" />
+                    <Border Style="{StaticResource FieldBox}">
+                        <Entry Text="{Binding Name}" Placeholder="e.g. Push Day A"
+                               Style="{StaticResource LiftEntry}" MaxLength="40" />
+                    </Border>
+
+                    <Label Text="MUSCLE FOCUS" Style="{StaticResource MutedCaption}" />
+                    <Border Style="{StaticResource FieldBox}">
+                        <Entry Text="{Binding Focus}" Placeholder="e.g. Chest / Shoulders / Triceps"
+                               Style="{StaticResource LiftEntry}" MaxLength="60" />
+                    </Border>
+
+                    <Label Text="ESTIMATED TIME (MINUTES)" Style="{StaticResource MutedCaption}" />
+                    <Border Style="{StaticResource FieldBox}">
+                        <Entry Text="{Binding EstimatedMinutes}" Keyboard="Numeric"
+                               Style="{StaticResource LiftEntry}" MaxLength="3" />
+                    </Border>
+                </VerticalStackLayout>
+            </Border>
+
+            <Label Text="{Binding ExerciseHeader}" Style="{StaticResource MutedCaption}" Margin="4,6,0,0" />
+
+            <!-- Exercise list -->
+            <VerticalStackLayout Spacing="12" BindableLayout.ItemsSource="{Binding Items}">
+                <BindableLayout.EmptyView>
+                    <Label Text="No exercises yet. Tap + Add Exercise below."
+                           Style="{StaticResource SubtleText}" HorizontalOptions="Center" Margin="0,10" />
+                </BindableLayout.EmptyView>
+
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate x:DataType="models:RoutineExercise">
+                        <Border Style="{StaticResource Card}">
+                            <VerticalStackLayout Spacing="10">
+                                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+                                    <Border BackgroundColor="{StaticResource Primary}" StrokeThickness="0"
+                                            WidthRequest="28" HeightRequest="28" VerticalOptions="Center">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="14" />
+                                        </Border.StrokeShape>
+                                        <Label Text="{Binding Position}" FontAttributes="Bold" FontSize="13"
+                                               TextColor="{StaticResource PrimaryDarkText}"
+                                               HorizontalOptions="Center" VerticalOptions="Center" />
+                                    </Border>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                        <Label Text="{Binding ExerciseName}" Style="{StaticResource CardTitle}" FontSize="15" />
+                                        <Label Style="{StaticResource SubtleText}" FontSize="12">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{Binding MuscleGroup}" />
+                                                    <Span Text=" • " />
+                                                    <Span Text="{Binding Equipment}" />
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                    </VerticalStackLayout>
+                                    <Button Grid.Column="2" Text="↑" Style="{StaticResource DarkButton}"
+                                            WidthRequest="36" HeightRequest="36" Padding="0"
+                                            Clicked="OnMoveUpClicked" />
+                                    <Button Grid.Column="3" Text="✕" Style="{StaticResource DarkButton}"
+                                            WidthRequest="36" HeightRequest="36" Padding="0"
+                                            TextColor="{StaticResource StatusBusy}"
+                                            Clicked="OnRemoveClicked" />
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
+                                    <Label Text="SETS" Style="{StaticResource MutedCaption}" />
+                                    <Label Grid.Column="1" Text="REPS" Style="{StaticResource MutedCaption}" />
+                                    <Label Grid.Column="2" Text="REST (S)" Style="{StaticResource MutedCaption}" />
+
+                                    <Border Grid.Row="1" Style="{StaticResource FieldBox}">
+                                        <Entry Text="{Binding TargetSets}" Keyboard="Numeric" MaxLength="2"
+                                               Style="{StaticResource LiftEntry}" HorizontalTextAlignment="Center" />
+                                    </Border>
+                                    <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource FieldBox}">
+                                        <Entry Text="{Binding TargetReps}" Keyboard="Numeric" MaxLength="2"
+                                               Style="{StaticResource LiftEntry}" HorizontalTextAlignment="Center" />
+                                    </Border>
+                                    <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource FieldBox}">
+                                        <Entry Text="{Binding RestSeconds}" Keyboard="Numeric" MaxLength="3"
+                                               Style="{StaticResource LiftEntry}" HorizontalTextAlignment="Center" />
+                                    </Border>
+                                </Grid>
+
+                                <Border Style="{StaticResource FieldBox}">
+                                    <Entry Text="{Binding SetupNote}" Placeholder="Setup note (e.g. seat height 4)"
+                                           Style="{StaticResource LiftEntry}" FontSize="13" MaxLength="80" />
+                                </Border>
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+
+            <Button Text="+ Add Exercise" Style="{StaticResource OutlineButton}" HeightRequest="48"
+                    Clicked="OnAddExerciseClicked" />
+
+            <Button Text="SAVE ROUTINE" Style="{StaticResource PrimaryButton}" Margin="0,6,0,0"
+                    Clicked="OnSaveClicked" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

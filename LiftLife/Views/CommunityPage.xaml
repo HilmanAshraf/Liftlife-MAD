@@ -127,7 +127,7 @@
 
                 <!-- Spacer so the last card isn't hidden behind the floating tab bar -->
                 <CollectionView.Footer>
-                    <BoxView HeightRequest="110" Color="Transparent" />
+                    <ContentView HeightRequest="110" />
                 </CollectionView.Footer>
             </CollectionView>
         </RefreshView>
