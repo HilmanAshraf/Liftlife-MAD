@@ -393,6 +393,71 @@ Workouts tab → **START WORKOUT SESSION** → Active Session (3.1)
 
 ---
 
+---
+
+## DAY 6 — Daily Nutrition Hub, Food Search & Log, Custom Food, Macro Targets
+
+**Goal:** Track daily eating against targets that adapt automatically to training vs rest days.
+
+### Flow
+Nutrition tab (4.0) → **+ Add Food** on a meal → Food Search & Log sheet (5.1)
+→ *+ Create Custom Food* → Custom Food Creator (5.2) → saved and auto-selected → **Log Food**.
+Nutrition tab → **Edit targets ›** → Macro Targets (6.2).
+
+### The adaptive logic (the key idea)
+- A date is a **Training Day** if a workout was **completed** on that date
+  (`IsTrainingDayAsync` checks the `workout_sessions` table). Otherwise it's a **Rest Day**.
+- `UserSettings.TargetsFor(isTrainingDay)`:
+  - Training day → full baseline: 2,450 kcal, P185, C280, F65
+  - Rest day → calories × 85% and carbs × 70% (2,082 kcal, C196); protein and fat unchanged
+- So finishing a workout (Day 5) instantly flips today's badge to **⚡ TRAINING DAY ACTIVE** and
+  raises the targets — no manual switch needed.
+
+### Files and what they do
+- **`ViewModels/NutritionViewModel.cs`** — loads the selected date: day type, targets, logged
+  meals, totals. Contains `MacroProgress` (one macro bar: text, progress, over-target flag) and
+  `MealSection` (Breakfast / Lunch / Dinner / Snacks with their items and kcal total).
+- **`Views/NutritionPage`** — screen 4.0:
+  - **‹ Today ›** date switcher (can't go into the future); **swipe the summary card** left/right
+    to change day too
+  - Day badge (lime = Training, blue = Rest), **Edit targets ›**
+  - Calorie meter + "kcal remaining" (turns **red when over** target)
+  - Protein / Carbs / Fat bars (blue / lime / orange)
+  - Meal cards: each food with servings, macros and kcal. **Tap** a food to change the amount
+    (prompt), **swipe left** to delete. **+ Add Food** opens the search sheet for that meal.
+- **`ViewModels/FoodLogViewModel.cs` + `Views/FoodLogPage`** — screen 5.1: meal chips,
+  **search as you type** over the local catalogue, tap to select (lime border, CollectionView
+  selection), a servings **Stepper** (0.5–20) with a live kcal/macro preview, **Log Food**.
+- **`ViewModels/CustomFoodViewModel.cs` + `Views/CustomFoodPage`** — screen 5.2: name, serving,
+  calories, protein/carbs/fat. Shows whether the macros add up (4/4/9 kcal per gram) and warns
+  if they're far off. Validation + duplicate-name check. The new food is auto-selected after saving.
+- **`ViewModels/TargetSetupViewModel.cs` + `Views/TargetSetupPage`** — screen 6.2: baseline
+  targets, rest-day calorie % and carb % steppers, macro sanity check, a live **preview of both
+  days**, Save (with validation) and Reset to Defaults.
+- **`Models/Nutrition.cs`** — `MealLog.From(food, qty, meal, date)` builds a log entry with
+  macros × servings; `MealLog` now stores the serving text; `MacroTargets` record;
+  `UserSettings.TargetsFor(...)`.
+- **`Data/LiftLifeRepository.cs`** — `LogFoodAsync`, `UpdateMealQuantityAsync`,
+  `FoodNameExistsAsync`, `IsTrainingDayAsync`.
+- **`Data/LiftLifeDatabase.cs`** — seeds meals for today (rest day) and yesterday (training
+  day) so both day types can be shown in the demo.
+- **`Services/NumberInput.cs`** — shared helper to read numbers from text boxes ("80,5" works).
+- **`Resources/Styles/Colors.xaml`** — macro colours and the rest-day blue.
+
+### Likely questions & my answers
+- **Q: How does the app know it's a training day?** It checks SQLite for a workout session
+  completed on that date. Finish a workout and the Nutrition tab switches by itself.
+- **Q: Why do only calories and carbs drop on rest days?** Carbs fuel training, so they're cut
+  when you don't train; protein and fat stay the same to support muscle recovery.
+- **Q: What's stored when I log food?** A `meal_logs` row: date, meal, food, servings, and the
+  calories/macros already multiplied by servings — so editing or deleting a food later doesn't
+  change past days.
+- **Q: How is the calorie check on custom food done?** protein × 4 + carbs × 4 + fat × 9; if that
+  is more than 20% away from the calories typed in, a warning shows.
+- **Q: Which gestures / APIs are used here?** Tap (items, chips, date arrows), swipe gesture
+  (change day), SwipeView (delete), Stepper, prompt dialog, modal sheets, CollectionView selection.
+
+---
+
 ## Still to come
-- **Day 6** — Daily Nutrition Hub, food search/log, custom foods, training vs rest day macros
 - **Day 7** — About page, final polish, testing, report

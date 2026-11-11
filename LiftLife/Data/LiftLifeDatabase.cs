@@ -59,6 +59,45 @@ public class LiftLifeDatabase
         await SeedSettingsAsync(db);
         await SeedSampleRoutineAsync(db);
         await SeedWorkoutHistoryAsync(db);
+        await SeedMealsAsync(db);
+    }
+
+    /// <summary>
+    /// Sample meals for today (a rest day) and yesterday (a training day: Pull Day B),
+    /// so the Nutrition tab shows both day types on first launch.
+    /// </summary>
+    private static async Task SeedMealsAsync(SQLiteAsyncConnection db)
+    {
+        if (await db.Table<MealLog>().CountAsync() > 0) return;
+
+        var today = DateTime.Today;
+        var yesterday = today.AddDays(-1);
+
+        var plan = new (DateTime date, MealCategory meal, string food, double qty)[]
+        {
+            (today, MealCategory.Breakfast, "Rolled Oats", 1),
+            (today, MealCategory.Breakfast, "Banana", 1),
+            (today, MealCategory.Breakfast, "Whey Protein", 1),
+            (today, MealCategory.Lunch, "Mixed Nasi Lemak", 1),
+            (today, MealCategory.Lunch, "Chicken Breast (grilled)", 1),
+
+            (yesterday, MealCategory.Breakfast, "Whole Egg", 3),
+            (yesterday, MealCategory.Breakfast, "Rolled Oats", 1.5),
+            (yesterday, MealCategory.Lunch, "Chicken Breast (grilled)", 2),
+            (yesterday, MealCategory.Lunch, "White Rice (cooked)", 2.5),
+            (yesterday, MealCategory.Dinner, "Salmon (cooked)", 1.5),
+            (yesterday, MealCategory.Dinner, "White Rice (cooked)", 2),
+            (yesterday, MealCategory.Snacks, "Greek Yogurt (plain)", 1),
+            (yesterday, MealCategory.Snacks, "Whey Protein", 1),
+            (yesterday, MealCategory.Snacks, "Banana", 1),
+        };
+
+        foreach (var (date, meal, foodName, qty) in plan)
+        {
+            var food = await db.Table<FoodItem>().Where(f => f.Name == foodName).FirstOrDefaultAsync();
+            if (food is not null)
+                await db.InsertAsync(MealLog.From(food, qty, meal, date));
+        }
     }
 
     /// <summary>

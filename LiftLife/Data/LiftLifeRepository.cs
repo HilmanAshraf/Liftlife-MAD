@@ -347,6 +347,59 @@ public class LiftLifeRepository
         await conn.InsertAsync(log);
     }
 
+    /// <summary>Logs a food against a meal and date (macros = food × quantity).</summary>
+    public Task LogFoodAsync(FoodItem food, double quantity, MealCategory category, DateTime date) =>
+        LogMealAsync(MealLog.From(food, quantity, category, date));
+
+    /// <summary>Changes the amount of a logged food and recalculates its macros.</summary>
+    public async Task UpdateMealQuantityAsync(MealLog log, double quantity)
+    {
+        var conn = await _db.GetConnectionAsync();
+        var food = await conn.FindAsync<FoodItem>(log.FoodId);
+
+        if (food is not null)
+        {
+            var updated = MealLog.From(food, quantity, log.Category, DateTime.ParseExact(log.DateKey, "yyyy-MM-dd", null));
+            updated.Id = log.Id;
+            await conn.UpdateAsync(updated);
+            return;
+        }
+
+        // Food was removed from the catalogue: scale the stored totals instead.
+        var factor = log.Quantity <= 0 ? 1 : quantity / log.Quantity;
+        log.Calories = (int)Math.Round(log.Calories * factor);
+        log.ProteinG = Math.Round(log.ProteinG * factor, 1);
+        log.CarbsG = Math.Round(log.CarbsG * factor, 1);
+        log.FatG = Math.Round(log.FatG * factor, 1);
+        log.Quantity = quantity;
+        await conn.UpdateAsync(log);
+    }
+
+    public async Task<bool> FoodNameExistsAsync(string name)
+    {
+        var conn = await _db.GetConnectionAsync();
+        var all = await conn.Table<FoodItem>().ToListAsync();
+        return all.Any(f => string.Equals(f.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// A date counts as a Training Day if a workout was completed on it. This is what
+    /// makes the nutrition targets switch automatically after a workout.
+    /// </summary>
+    public async Task<bool> IsTrainingDayAsync(DateTime date)
+    {
+        var conn = await _db.GetConnectionAsync();
+        var start = date.Date;
+        var end = start.AddDays(1);
+
+        var sessions = await conn.Table<WorkoutSession>().Where(s => s.IsCompleted).ToListAsync();
+        if (sessions.Any(s => s.CompletedAt >= start && s.CompletedAt < end))
+            return true;
+
+        var settings = await GetSettingsAsync();
+        return settings.LastTrainingDate == start.ToString("yyyy-MM-dd");
+    }
+
     public async Task DeleteMealLogAsync(int id)
     {
         var conn = await _db.GetConnectionAsync();

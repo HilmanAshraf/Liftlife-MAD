@@ -31,6 +31,12 @@
     <Color x:Key="StatusWarning">#FFB020</Color>
     <Color x:Key="StatusOutOfOrder">#8A8A96</Color>
 
+    <!-- Nutrition -->
+    <Color x:Key="MacroProtein">#5AC8FA</Color>
+    <Color x:Key="MacroCarbs">#E9F558</Color>
+    <Color x:Key="MacroFat">#FF9F43</Color>
+    <Color x:Key="RestDay">#8E9BFF</Color>
+
     <Color x:Key="White">White</Color>
     <Color x:Key="Black">Black</Color>
     <Color x:Key="Magenta">#D600AA</Color>

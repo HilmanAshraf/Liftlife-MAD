@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
+             xmlns:vm="clr-namespace:LiftLife.ViewModels"
+             xmlns:models="clr-namespace:LiftLife.Models"
+             x:Class="LiftLife.Views.FoodLogPage"
+             x:DataType="vm:FoodLogViewModel"
+             ios:Page.ModalPresentationStyle="PageSheet"
+             BackgroundColor="{StaticResource AppBackground}">
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Padding="20,24,20,24" RowSpacing="14">
+
+        <!-- Header -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
+            <Button Text="✕"
+                    WidthRequest="40" HeightRequest="40" CornerRadius="20" Padding="0"
+                    BackgroundColor="{StaticResource SurfaceElevated}"
+                    TextColor="{StaticResource TextPrimary}" FontSize="16"
+                    Clicked="OnCloseClicked" />
+            <VerticalStackLayout Grid.Column="1" HorizontalOptions="Center" VerticalOptions="Center">
+                <Label Text="Add Food" Style="{StaticResource CardTitle}" HorizontalOptions="Center" />
+                <Label Text="{Binding Subtitle}" Style="{StaticResource SubtleText}" HorizontalOptions="Center" />
+            </VerticalStackLayout>
+            <ContentView Grid.Column="2" WidthRequest="40" />
+        </Grid>
+
+        <!-- Meal chips -->
+        <HorizontalStackLayout Grid.Row="1" Spacing="8" HorizontalOptions="Center"
+                               BindableLayout.ItemsSource="{Binding Meals}">
+            <BindableLayout.ItemTemplate>
+                <DataTemplate x:DataType="vm:CategoryChip">
+                    <Border Padding="14,7" StrokeThickness="1"
+                            Stroke="{StaticResource StrokeColor}"
+                            BackgroundColor="{StaticResource SurfaceCard}">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="16" />
+                        </Border.StrokeShape>
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                                <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                                <Setter Property="Stroke" Value="{StaticResource Primary}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnMealTapped" />
+                        </Border.GestureRecognizers>
+                        <Label Text="{Binding Name}" FontSize="13" FontAttributes="Bold"
+                               TextColor="{StaticResource TextPrimary}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding IsSelected}" Value="True">
+                                    <Setter Property="TextColor" Value="{StaticResource PrimaryDarkText}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </Border>
+                </DataTemplate>
+            </BindableLayout.ItemTemplate>
+        </HorizontalStackLayout>
+
+        <!-- Search box -->
+        <Border Grid.Row="2" Style="{StaticResource FieldBox}" Padding="12,0">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                <Label Text="🔍" VerticalOptions="Center" />
+                <Entry Grid.Column="1" Text="{Binding SearchText}"
+                       Placeholder="Search foods (e.g. chicken, rice)"
+                       Style="{StaticResource LiftEntry}"
+                       ClearButtonVisibility="WhileEditing"
+                       ReturnType="Search" />
+            </Grid>
+        </Border>
+
+        <!-- Local food catalogue -->
+        <CollectionView Grid.Row="3"
+                        ItemsSource="{Binding Foods}"
+                        SelectionMode="Single"
+                        SelectedItem="{Binding SelectedFood, Mode=TwoWay}">
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
+            </CollectionView.ItemsLayout>
+
+            <CollectionView.EmptyView>
+                <VerticalStackLayout Spacing="6" Margin="0,30,0,0" HorizontalOptions="Center">
+                    <Label Text="No foods match your search" Style="{StaticResource CardTitle}" FontSize="15"
+                           HorizontalOptions="Center" />
+                    <Label Text="Create it as a custom food below." Style="{StaticResource SubtleText}"
+                           HorizontalOptions="Center" />
+                </VerticalStackLayout>
+            </CollectionView.EmptyView>
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:FoodItem">
+                    <Border Style="{StaticResource Card}" Padding="14,12">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroupList>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal" />
+                                    <VisualState x:Name="Selected">
+                                        <VisualState.Setters>
+                                            <Setter Property="Stroke" Value="{StaticResource Primary}" />
+                                            <Setter Property="StrokeThickness" Value="2" />
+                                            <Setter Property="BackgroundColor" Value="{StaticResource SurfaceElevated}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateGroupList>
+                        </VisualStateManager.VisualStateGroups>
+
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <VerticalStackLayout Spacing="2">
+                                <HorizontalStackLayout Spacing="8">
+                                    <Label Text="{Binding Name}" Style="{StaticResource BodyText}" FontAttributes="Bold" />
+                                    <Label Text="CUSTOM" IsVisible="{Binding IsCustom}" FontSize="10" FontAttributes="Bold"
+                                           TextColor="{StaticResource Primary}" VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                                <Label Text="{Binding ServingLine}" Style="{StaticResource SubtleText}" FontSize="12" />
+                            </VerticalStackLayout>
+                            <Label Grid.Column="1" Text="{Binding CaloriesText}" FontAttributes="Bold"
+                                   TextColor="{StaticResource Primary}" VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+
+            <CollectionView.Footer>
+                <Button Text="+ Create Custom Food" Style="{StaticResource OutlineButton}"
+                        Margin="0,4,0,8" Clicked="OnCreateCustomClicked" />
+            </CollectionView.Footer>
+        </CollectionView>
+
+        <!-- Portion logger -->
+        <Border Grid.Row="4" Style="{StaticResource CardElevated}">
+            <VerticalStackLayout Spacing="10">
+                <Label Text="{Binding SelectedName}" Style="{StaticResource CardTitle}" FontSize="15" />
+                <Label Text="{Binding PreviewText}" Style="{StaticResource SubtleText}" />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                    <Label Text="{Binding QuantityText}" Style="{StaticResource BodyText}" FontAttributes="Bold"
+                           VerticalOptions="Center" />
+                    <Stepper Grid.Column="1" Value="{Binding Quantity}"
+                             Minimum="0.5" Maximum="20" Increment="0.5" />
+                </Grid>
+                <Button Text="LOG FOOD" Style="{StaticResource PrimaryButton}" Clicked="OnLogClicked" />
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
+</ContentPage>

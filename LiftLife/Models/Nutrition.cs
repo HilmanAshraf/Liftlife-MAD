@@ -27,7 +27,17 @@ public class FoodItem
 
     [Ignore]
     public string MacroLine => $"{Calories} kcal • P{ProteinG:0} C{CarbsG:0} F{FatG:0}";
+
+    /// <summary>Second line in the food search list, e.g. "100 g • P31 C0 F4".</summary>
+    [Ignore]
+    public string ServingLine => $"{Serving} • P{ProteinG:0} C{CarbsG:0} F{FatG:0}";
+
+    [Ignore]
+    public string CaloriesText => $"{Calories} kcal";
 }
+
+/// <summary>Calorie and macro targets for one day.</summary>
+public record MacroTargets(int Calories, double ProteinG, double CarbsG, double FatG);
 
 /// <summary>
 /// A food logged against a given date and meal category. Quantity multiplies the
@@ -49,11 +59,38 @@ public class MealLog
 
     public double Quantity { get; set; } = 1;
 
-    // Snapshot of macros at log time (so later edits to the food don't change history).
+    /// <summary>Serving description copied from the food, e.g. "100 g".</summary>
+    public string Serving { get; set; } = string.Empty;
+
+    // Totals for this entry (food macros × quantity), copied at log time
+    // so the history stays the same even if the food is changed later.
     public int Calories { get; set; }
     public double ProteinG { get; set; }
     public double CarbsG { get; set; }
     public double FatG { get; set; }
+
+    /// <summary>Builds a log entry for a food, multiplying its macros by the quantity.</summary>
+    public static MealLog From(FoodItem food, double quantity, MealCategory category, DateTime date) => new()
+    {
+        DateKey = date.ToString("yyyy-MM-dd"),
+        Category = category,
+        FoodId = food.Id,
+        FoodName = food.Name,
+        Serving = food.Serving,
+        Quantity = quantity,
+        Calories = (int)Math.Round(food.Calories * quantity),
+        ProteinG = Math.Round(food.ProteinG * quantity, 1),
+        CarbsG = Math.Round(food.CarbsG * quantity, 1),
+        FatG = Math.Round(food.FatG * quantity, 1)
+    };
+
+    /// <summary>e.g. "1.5 × 100 g • P46 C0 F5".</summary>
+    [Ignore]
+    public string DetailText =>
+        $"{Quantity:0.##} × {(string.IsNullOrWhiteSpace(Serving) ? "serving" : Serving)} • P{ProteinG:0} C{CarbsG:0} F{FatG:0}";
+
+    [Ignore]
+    public string CaloriesText => $"{Calories} kcal";
 }
 
 /// <summary>
@@ -93,21 +130,11 @@ public class UserSettings
     [Ignore]
     public double RestCarbsG => Math.Round(BaseCarbsG * RestDayCarbFactor);
 
-    // ----- Computed targets for the active day (not stored) -----
-
-    [Ignore]
-    public int TargetCalories => TodayType == DayType.Training
-        ? BaseCalories
-        : (int)Math.Round(BaseCalories * RestDayCalorieFactor);
-
-    [Ignore]
-    public double TargetCarbsG => TodayType == DayType.Training
-        ? BaseCarbsG
-        : Math.Round(BaseCarbsG * RestDayCarbFactor);
-
-    [Ignore]
-    public double TargetProteinG => BaseProteinG; // protein stays high on rest days
-
-    [Ignore]
-    public double TargetFatG => BaseFatG;
+    /// <summary>
+    /// Adaptive targets: a training day uses the full baseline; a rest day lowers calories
+    /// and carbs. Protein and fat stay the same to protect muscle recovery.
+    /// </summary>
+    public MacroTargets TargetsFor(bool isTrainingDay) => isTrainingDay
+        ? new MacroTargets(BaseCalories, BaseProteinG, BaseCarbsG, BaseFatG)
+        : new MacroTargets(RestCalories, BaseProteinG, RestCarbsG, BaseFatG);
 }

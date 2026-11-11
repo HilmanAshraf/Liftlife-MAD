@@ -1,14 +1,216 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:LiftLife.ViewModels"
+             xmlns:models="clr-namespace:LiftLife.Models"
              x:Class="LiftLife.Views.NutritionPage"
+             x:DataType="vm:NutritionViewModel"
              Title="Nutrition"
+             Shell.NavBarIsVisible="False"
              BackgroundColor="{StaticResource AppBackground}">
 
-    <Grid RowDefinitions="Auto,*" Padding="20,16">
-        <Label Grid.Row="0" Text="Daily Nutrition" Style="{StaticResource ScreenTitle}" />
-        <VerticalStackLayout Grid.Row="1" VerticalOptions="Center" Spacing="8">
-            <Label Text="Nutrition Hub" Style="{StaticResource CardTitle}" HorizontalOptions="Center" />
-        </VerticalStackLayout>
+    <Grid RowDefinitions="Auto,*" RowSpacing="12" Padding="20,12,20,0">
+
+        <!-- Title + date switcher -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <Label Text="Daily Nutrition" Style="{StaticResource ScreenTitle}" VerticalOptions="Center" />
+
+            <Border Grid.Column="1" Padding="4,0" VerticalOptions="Center"
+                    BackgroundColor="{StaticResource SurfaceCard}"
+                    Stroke="{StaticResource StrokeColor}" StrokeThickness="1">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="19" />
+                </Border.StrokeShape>
+                <Grid ColumnDefinitions="34,Auto,34" HeightRequest="38">
+                    <Label Text="‹" FontSize="24" TextColor="{StaticResource TextPrimary}"
+                           HorizontalOptions="Center" VerticalOptions="Center"
+                           SemanticProperties.Description="Previous day">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnPreviousDayTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                    <Label Grid.Column="1" Text="{Binding DateText}"
+                           FontSize="14" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}"
+                           MinimumWidthRequest="72" HorizontalTextAlignment="Center" VerticalOptions="Center" />
+                    <Label Grid.Column="2" Text="›" FontSize="24" TextColor="{StaticResource TextPrimary}"
+                           HorizontalOptions="Center" VerticalOptions="Center"
+                           SemanticProperties.Description="Next day">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding CanGoNext}" Value="False">
+                                <Setter Property="Opacity" Value="0.25" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnNextDayTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="14" Padding="0,0,0,120">
+
+                <!-- Summary card (swipe left/right to change day) -->
+                <Border Style="{StaticResource CardElevated}">
+                    <Border.GestureRecognizers>
+                        <SwipeGestureRecognizer Direction="Right" Swiped="OnSwipedRight" />
+                        <SwipeGestureRecognizer Direction="Left" Swiped="OnSwipedLeft" />
+                    </Border.GestureRecognizers>
+
+                    <VerticalStackLayout Spacing="12">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <!-- Dynamic day badge -->
+                            <Border HorizontalOptions="Start" Padding="12,6" StrokeThickness="0"
+                                    BackgroundColor="{StaticResource Tertiary}">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="14" />
+                                </Border.StrokeShape>
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" Binding="{Binding IsTraining}" Value="True">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                                    </DataTrigger>
+                                </Border.Triggers>
+                                <Label Text="{Binding DayBadgeText}" FontSize="12" FontAttributes="Bold"
+                                       TextColor="{StaticResource RestDay}">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding IsTraining}" Value="True">
+                                            <Setter Property="TextColor" Value="{StaticResource PrimaryDarkText}" />
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
+                            </Border>
+
+                            <Label Grid.Column="1" Text="Edit targets ›" FontSize="13"
+                                   TextColor="{StaticResource Primary}" VerticalOptions="Center">
+                                <Label.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnEditTargetsTapped" />
+                                </Label.GestureRecognizers>
+                            </Label>
+                        </Grid>
+
+                        <Label Text="{Binding FullDateText}" Style="{StaticResource MutedCaption}" />
+
+                        <!-- Calorie meter -->
+                        <Label Text="{Binding CaloriesText}" Style="{StaticResource CardTitle}" FontSize="18" />
+                        <ProgressBar Progress="{Binding CaloriesProgress}" ProgressColor="{StaticResource Primary}">
+                            <ProgressBar.Triggers>
+                                <DataTrigger TargetType="ProgressBar" Binding="{Binding IsOverCalories}" Value="True">
+                                    <Setter Property="ProgressColor" Value="{StaticResource StatusBusy}" />
+                                </DataTrigger>
+                            </ProgressBar.Triggers>
+                        </ProgressBar>
+                        <Label Text="{Binding RemainingText}" Style="{StaticResource SubtleText}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding IsOverCalories}" Value="True">
+                                    <Setter Property="TextColor" Value="{StaticResource StatusBusy}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+
+                        <ContentView HeightRequest="1" BackgroundColor="{StaticResource StrokeColor}" Margin="0,2" />
+
+                        <!-- Macro bars -->
+                        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="6">
+                            <Label Text="Protein" Style="{StaticResource BodyText}" FontAttributes="Bold" />
+                            <Label Grid.Column="1" Text="{Binding Protein.Text}" Style="{StaticResource SubtleText}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding Protein.IsOver}" Value="True">
+                                        <Setter Property="TextColor" Value="{StaticResource StatusBusy}" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                            <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" Progress="{Binding Protein.Progress}"
+                                         ProgressColor="{StaticResource MacroProtein}" />
+                        </Grid>
+
+                        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="6">
+                            <Label Text="Carbs" Style="{StaticResource BodyText}" FontAttributes="Bold" />
+                            <Label Grid.Column="1" Text="{Binding Carbs.Text}" Style="{StaticResource SubtleText}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding Carbs.IsOver}" Value="True">
+                                        <Setter Property="TextColor" Value="{StaticResource StatusBusy}" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                            <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" Progress="{Binding Carbs.Progress}"
+                                         ProgressColor="{StaticResource MacroCarbs}" />
+                        </Grid>
+
+                        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="6">
+                            <Label Text="Fat" Style="{StaticResource BodyText}" FontAttributes="Bold" />
+                            <Label Grid.Column="1" Text="{Binding Fat.Text}" Style="{StaticResource SubtleText}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding Fat.IsOver}" Value="True">
+                                        <Setter Property="TextColor" Value="{StaticResource StatusBusy}" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                            <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" Progress="{Binding Fat.Progress}"
+                                         ProgressColor="{StaticResource MacroFat}" />
+                        </Grid>
+
+                        <Label Text="{Binding DayHint}" Style="{StaticResource SubtleText}" FontSize="12" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Label Text="MEALS  •  tap an item to change amount, swipe left to delete"
+                       Style="{StaticResource MutedCaption}" Margin="4,4,0,0" />
+
+                <!-- Meal sections -->
+                <VerticalStackLayout Spacing="12" BindableLayout.ItemsSource="{Binding Sections}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="vm:MealSection">
+                            <Border Style="{StaticResource Card}">
+                                <VerticalStackLayout Spacing="10">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <Label Text="{Binding Header}" Style="{StaticResource CardTitle}" />
+                                        <Label Grid.Column="1" Text="{Binding TotalText}" FontAttributes="Bold"
+                                               TextColor="{StaticResource Primary}" VerticalOptions="Center" />
+                                    </Grid>
+
+                                    <VerticalStackLayout Spacing="4" BindableLayout.ItemsSource="{Binding Items}">
+                                        <BindableLayout.ItemTemplate>
+                                            <DataTemplate x:DataType="models:MealLog">
+                                                <SwipeView BackgroundColor="Transparent">
+                                                    <SwipeView.RightItems>
+                                                        <SwipeItems Mode="Reveal">
+                                                            <SwipeItem Text="Delete"
+                                                                       BackgroundColor="{StaticResource StatusBusy}"
+                                                                       Invoked="OnDeleteInvoked" />
+                                                        </SwipeItems>
+                                                    </SwipeView.RightItems>
+                                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" Padding="0,6"
+                                                          BackgroundColor="{StaticResource SurfaceCard}">
+                                                        <Grid.GestureRecognizers>
+                                                            <TapGestureRecognizer Tapped="OnItemTapped" />
+                                                        </Grid.GestureRecognizers>
+                                                        <VerticalStackLayout Spacing="2">
+                                                            <Label Text="{Binding FoodName}" Style="{StaticResource BodyText}"
+                                                                   FontAttributes="Bold" />
+                                                            <Label Text="{Binding DetailText}" Style="{StaticResource SubtleText}"
+                                                                   FontSize="12" />
+                                                        </VerticalStackLayout>
+                                                        <Label Grid.Column="1" Text="{Binding CaloriesText}"
+                                                               Style="{StaticResource BodyText}" VerticalOptions="Center" />
+                                                    </Grid>
+                                                </SwipeView>
+                                            </DataTemplate>
+                                        </BindableLayout.ItemTemplate>
+                                    </VerticalStackLayout>
+
+                                    <Label Text="Nothing logged yet" IsVisible="{Binding IsEmpty}"
+                                           Style="{StaticResource SubtleText}" FontSize="13" />
+
+                                    <Button Text="+ Add Food" Style="{StaticResource DarkButton}"
+                                            HorizontalOptions="Start" HeightRequest="40" Padding="18,0"
+                                            Clicked="OnAddFoodClicked" />
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
     </Grid>
 </ContentPage>

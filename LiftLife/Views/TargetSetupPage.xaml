@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:LiftLife.ViewModels"
+             x:Class="LiftLife.Views.TargetSetupPage"
+             x:DataType="vm:TargetSetupViewModel"
+             Title="Macro Targets"
+             Shell.TabBarIsVisible="False"
+             BackgroundColor="{StaticResource AppBackground}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20,16,20,40" Spacing="14">
+
+            <!-- Baseline (training day) targets -->
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="TRAINING DAY TARGETS" Style="{StaticResource MutedCaption}" />
+
+                    <Label Text="CALORIES (KCAL)" Style="{StaticResource MutedCaption}" Margin="0,4,0,0" />
+                    <Border Style="{StaticResource FieldBox}">
+                        <Entry Text="{Binding Calories}" Keyboard="Numeric" MaxLength="4"
+                               Style="{StaticResource LiftEntry}" />
+                    </Border>
+
+                    <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="4">
+                        <Label Text="PROTEIN (G)" Style="{StaticResource MutedCaption}" TextColor="{StaticResource MacroProtein}" />
+                        <Label Grid.Column="1" Text="CARBS (G)" Style="{StaticResource MutedCaption}" TextColor="{StaticResource MacroCarbs}" />
+                        <Label Grid.Column="2" Text="FAT (G)" Style="{StaticResource MutedCaption}" TextColor="{StaticResource MacroFat}" />
+
+                        <Border Grid.Row="1" Style="{StaticResource FieldBox}">
+                            <Entry Text="{Binding Protein}" Keyboard="Numeric" MaxLength="5"
+                                   Style="{StaticResource LiftEntry}" HorizontalTextAlignment="Center" />
+                        </Border>
+                        <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource FieldBox}">
+                            <Entry Text="{Binding Carbs}" Keyboard="Numeric" MaxLength="5"
+                                   Style="{StaticResource LiftEntry}" HorizontalTextAlignment="Center" />
+                        </Border>
+                        <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource FieldBox}">
+                            <Entry Text="{Binding Fat}" Keyboard="Numeric" MaxLength="5"
+                                   Style="{StaticResource LiftEntry}" HorizontalTextAlignment="Center" />
+                        </Border>
+                    </Grid>
+
+                    <Label Text="{Binding MacroCheckText}" Style="{StaticResource SubtleText}" FontSize="12">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding IsMacroMismatch}" Value="True">
+                                <Setter Property="TextColor" Value="{StaticResource StatusWarning}" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Rest day adjustment -->
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout Spacing="14">
+                    <Label Text="REST DAY ADJUSTMENT" Style="{StaticResource MutedCaption}" />
+
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                        <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                            <Label Text="Rest-day calories" Style="{StaticResource BodyText}" FontAttributes="Bold" />
+                            <Label Text="{Binding RestCaloriesText}" Style="{StaticResource SubtleText}" FontSize="12" />
+                        </VerticalStackLayout>
+                        <Stepper Grid.Column="1" Value="{Binding RestCaloriePercent}"
+                                 Minimum="50" Maximum="100" Increment="5" VerticalOptions="Center" />
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                        <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                            <Label Text="Rest-day carbs" Style="{StaticResource BodyText}" FontAttributes="Bold" />
+                            <Label Text="{Binding RestCarbsText}" Style="{StaticResource SubtleText}" FontSize="12" />
+                        </VerticalStackLayout>
+                        <Stepper Grid.Column="1" Value="{Binding RestCarbPercent}"
+                                 Minimum="30" Maximum="100" Increment="5" VerticalOptions="Center" />
+                    </Grid>
+
+                    <Label Text="Protein and fat stay the same on rest days to support muscle recovery."
+                           Style="{StaticResource SubtleText}" FontSize="12" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Live preview -->
+            <Border Style="{StaticResource CardElevated}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="PREVIEW" Style="{StaticResource MutedCaption}" />
+                    <Label Text="{Binding TrainingPreview}" Style="{StaticResource BodyText}" FontAttributes="Bold" />
+                    <Label Text="{Binding RestPreview}" Style="{StaticResource BodyText}" TextColor="{StaticResource RestDay}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Button Text="SAVE TARGETS" Style="{StaticResource PrimaryButton}" Clicked="OnSaveClicked" />
+            <Button Text="Reset to Defaults" Style="{StaticResource OutlineButton}" Clicked="OnResetClicked" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
