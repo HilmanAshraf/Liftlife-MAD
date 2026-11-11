@@ -1,14 +1,118 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:LiftLife.ViewModels"
              x:Class="LiftLife.Views.AboutPage"
+             x:DataType="vm:AboutViewModel"
              Title="About"
+             Shell.NavBarIsVisible="False"
              BackgroundColor="{StaticResource AppBackground}">
 
-    <Grid RowDefinitions="Auto,*" Padding="20,16">
-        <Label Grid.Row="0" Text="About LiftLife" Style="{StaticResource ScreenTitle}" />
-        <VerticalStackLayout Grid.Row="1" VerticalOptions="Center" Spacing="8">
-            <Label Text="About Page" Style="{StaticResource CardTitle}" HorizontalOptions="Center" />
-        </VerticalStackLayout>
+    <ContentPage.Resources>
+        <Style x:Key="Bullet" TargetType="Label" BasedOn="{StaticResource BodyText}">
+            <Setter Property="FontSize" Value="14" />
+        </Style>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,*" RowSpacing="12" Padding="20,12,20,0">
+        <Label Text="About LiftLife" Style="{StaticResource ScreenTitle}" />
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="14" Padding="0,0,0,120">
+
+                <!-- Application release card -->
+                <Border Style="{StaticResource CardElevated}">
+                    <VerticalStackLayout Spacing="6" HorizontalOptions="Center">
+                        <Image Source="logo.png" WidthRequest="72" HeightRequest="72" HorizontalOptions="Center"
+                               SemanticProperties.Description="LiftLife logo" />
+                        <Label Text="LiftLife" Style="{StaticResource ScreenTitle}" HorizontalOptions="Center" Margin="0,6,0,0" />
+                        <Label Text="Community Gym Hub &amp; Routine Tracker" TextColor="{StaticResource Primary}"
+                               FontSize="14" HorizontalOptions="Center" />
+                        <Label Text="{Binding VersionText}" Style="{StaticResource SubtleText}" HorizontalOptions="Center" />
+                        <Label Text="“Smart Community &amp; Digital Innovation”" FontAttributes="Italic"
+                               Style="{StaticResource SubtleText}" HorizontalOptions="Center" />
+                        <Label Text="{Binding DeviceText}" Style="{StaticResource MutedCaption}" FontSize="12"
+                               HorizontalOptions="Center" Margin="0,4,0,0" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Developer credentials -->
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="DEVELOPER DETAILS" Style="{StaticResource MutedCaption}" Margin="0,0,0,4" />
+                        <Label Text="Mohamed Hilman Ashraf Bin Mohamed Ashraf" Style="{StaticResource CardTitle}" />
+                        <Label Text="Student ID: BSW01085755" Style="{StaticResource BodyText}" />
+                        <Label Text="Bachelor in Software Engineering (Hons)" Style="{StaticResource BodyText}" />
+                        <Label Text="Universiti Tenaga Nasional (UNITEN)" Style="{StaticResource BodyText}" />
+                        <Label Text="CSNB544 Mobile Application Development • Semester 1 2026/2027"
+                               Style="{StaticResource SubtleText}" FontSize="12" Margin="0,4,0,0" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Application overview -->
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="APPLICATION OVERVIEW" Style="{StaticResource MutedCaption}" />
+                        <Label Style="{StaticResource BodyText}" LineHeight="1.2"
+                               Text="A Smart Community mobile solution built to ease shared gym equipment bottlenecks through crowdsourced station reporting, adaptive workout substitutions, and nutrition targets that adjust to training and rest days." />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Key features -->
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="KEY FEATURES" Style="{StaticResource MutedCaption}" />
+                        <Label Style="{StaticResource Bullet}" Text="👥  Community station status &amp; maintenance log" />
+                        <Label Style="{StaticResource Bullet}" Text="⇄  “Station Busy?” biomechanical exercise swap" />
+                        <Label Style="{StaticResource Bullet}" Text="📋  Routine builder with sets, reps, rest &amp; setup notes" />
+                        <Label Style="{StaticResource Bullet}" Text="⏱  Live workout tracker with automatic rest timer" />
+                        <Label Style="{StaticResource Bullet}" Text="🎯  Form guides with tempo animation &amp; safety cues" />
+                        <Label Style="{StaticResource Bullet}" Text="⚡  Adaptive training / rest day nutrition targets" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Local storage architecture -->
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="LOCAL STORAGE" Style="{StaticResource MutedCaption}" />
+                        <Label Text="🗄  Offline-first SQLite database" Style="{StaticResource CardTitle}" FontSize="15" />
+                        <Label Text="{Binding StorageText}" Style="{StaticResource SubtleText}" FontSize="12" />
+                        <VerticalStackLayout Spacing="6" Margin="0,4,0,0" BindableLayout.ItemsSource="{Binding Stats}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="vm:StatRow">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <Label Text="{Binding Label}" Style="{StaticResource BodyText}" FontSize="14" />
+                                        <Label Grid.Column="1" Text="{Binding Value}" FontAttributes="Bold"
+                                               TextColor="{StaticResource Primary}" FontSize="14" />
+                                    </Grid>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Profile & settings -->
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="PROFILE &amp; SETTINGS" Style="{StaticResource MutedCaption}" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                                <Label Text="Member name" Style="{StaticResource SubtleText}" FontSize="12" />
+                                <Label Text="{Binding MemberNameText}" Style="{StaticResource BodyText}" FontAttributes="Bold" />
+                            </VerticalStackLayout>
+                            <Button Grid.Column="1" Text="Change" Style="{StaticResource DarkButton}"
+                                    HeightRequest="38" Padding="16,0" Clicked="OnChangeNameClicked" />
+                        </Grid>
+                        <Button Text="Macro Targets ›" Style="{StaticResource OutlineButton}" Clicked="OnTargetsClicked" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Button Text="Reset Demo Data" Style="{StaticResource OutlineButton}"
+                        TextColor="{StaticResource StatusBusy}" Clicked="OnResetClicked" />
+
+                <Label Text="© 2026 Mohamed Hilman Ashraf • Built with .NET MAUI"
+                       Style="{StaticResource MutedCaption}" HorizontalOptions="Center" Margin="0,4,0,0" />
+            </VerticalStackLayout>
+        </ScrollView>
     </Grid>
 </ContentPage>

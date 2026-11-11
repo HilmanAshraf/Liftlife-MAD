@@ -11,16 +11,19 @@ namespace LiftLife.Views;
 public partial class ReportStatusPage : ContentPage
 {
     private readonly Station _station;
+    private readonly string _reportedBy;
     private readonly Func<Task> _onSaved;
     private readonly LiftLifeRepository _repo;
     private StationStatus _selected;
 
     /// <param name="station">The station being reported.</param>
-    /// <param name="onSaved">Called after saving so the Community Hub can refresh.</param>
-    public ReportStatusPage(Station station, Func<Task> onSaved)
+    /// <param name="reportedBy">The member's name, saved on the report.</param>
+    /// <param name="onSaved">Called after saving so the previous page can refresh.</param>
+    public ReportStatusPage(Station station, string reportedBy, Func<Task> onSaved)
     {
         InitializeComponent();
         _station = station;
+        _reportedBy = reportedBy;
         _onSaved = onSaved;
         _repo = ServiceHelper.Get<LiftLifeRepository>();
 
@@ -67,7 +70,7 @@ public partial class ReportStatusPage : ContentPage
             _ => null
         };
 
-        await _repo.UpdateStationStatusAsync(_station.Id, _selected, savedNote, "You");
+        await _repo.UpdateStationStatusAsync(_station.Id, _selected, savedNote, _reportedBy);
 
         try { HapticFeedback.Default.Perform(HapticFeedbackType.Click); } catch { }
 

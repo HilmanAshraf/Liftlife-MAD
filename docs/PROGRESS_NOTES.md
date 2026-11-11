@@ -459,5 +459,84 @@ Nutrition tab → **Edit targets ›** → Macro Targets (6.2).
 
 ---
 
-## Still to come
+## DAY 7 — Community upgrades, About page, polish
+
+**Goal:** Finish the proposal's "Maintenance Log" feature, make reports feel like a real
+community, and complete the About / settings page.
+
+### Community upgrades
+- **Maintenance log** — `Models/StationReport.cs` is a new `station_reports` table. Every status
+  change (report, claim, release) now **adds a row** instead of only overwriting the station, so
+  the full history is kept. Tap the top of any station card → **Station Log** page
+  (`Views/StationDetailPage`, `ViewModels/StationDetailViewModel.cs`): current status,
+  "3 reports in the last 30 days • 2 fault reports", **Update Status**, and the history newest
+  first with coloured dots. The seed data includes a believable history (e.g. Squat Rack #1:
+  busy → reported broken by Aina → confirmed by Staff).
+- **Member name** — asked once the first time you claim or report (`Services/MemberNamePrompt.cs`),
+  saved in `UserSettings.MemberName`, and shown on reports ("Reported by Hilman"). Change it on
+  the About page.
+- **Claim → I'm Done • Release** — claiming sets `Station.ClaimedByMe`; the card then says
+  "In use by you" and the button becomes **I'm Done • Release**, which frees the station for others.
+- **Stale reports** — a "Busy" report older than 45 minutes shows **BUSY?** and
+  "may be free now" (`Station.IsStale`), so old reports don't block people.
+
+### About LiftLife page (screens 5.0 / 6.1)
+`Views/AboutPage`, `ViewModels/AboutViewModel.cs`:
+- **Release card** — logo, name, tagline, **version read with the `AppInfo` API**
+  ("Version 1.0.0 (Build 1)" comes from the .csproj), course theme, and **device info from the
+  `DeviceInfo` API** ("Running on iOS 27.2 • Phone (Simulator)")
+- **Developer details** — name, student ID, programme, university, course
+- **Application overview** and **key features**
+- **Local storage** — the SQLite file name and size, and **live row counts per table**
+  (stations, reports, routines, workouts, sets, foods, meals)
+- **Profile & settings** — member name (Change), **Macro Targets ›**
+- **Reset Demo Data** — deletes the database file (with confirmation) and recreates the sample data
+
+### Robustness / polish
+- `LiftLifeDatabase.GetConnectionAsync` now uses a lock (`SemaphoreSlim`) so two screens loading at
+  the same time can't create or seed the database twice; `ResetAsync` uses the same lock.
+- `Services/TimeText.cs` — shared "2m ago" / "Today 2:14 PM" labels.
+- README updated with features, screens, project layout and run steps.
+
+### Verified
+Built with no errors or warnings. Checked on the iPhone 17 simulator: Community card with
+**I'm Done • Release** after a claim, the Squat Rack #1 Station Log, and the About page. Queried
+the SQLite file after **Reset Demo Data**: 7 stations, 15 station reports, 14 meal entries,
+30 sets — and the earlier claim was gone, confirming a clean reseed.
+
+### Likely questions & my answers
+- **Q: Where is the maintenance log stored?** In `station_reports`. `UpdateStationStatusAsync`
+  updates the station row *and* inserts a report row in one method.
+- **Q: How does Release know it's my station?** The `ClaimedByMe` column is set to true only when
+  you claim it; any other update (by anyone) sets it back to false.
+- **Q: How is the version shown?** `AppInfo.Current.VersionString` and `BuildString`, which read
+  `ApplicationDisplayVersion` and `ApplicationVersion` from `LiftLife.csproj`.
+- **Q: What does Reset Demo Data do?** Closes the SQLite connection, deletes `liftlife.db3`, and
+  the next query recreates the tables and seeds sample data again.
+- **Q: Is the community data shared between phones?** Not yet — it's an offline-first prototype
+  on one device. The report structure (who, what, when) is ready to sync to an online database
+  such as Firebase as a future step.
+
+---
+
+## Suggested demo flow (≈ 10 minutes)
+1. **Launch** → splash with logo → Community tab.
+2. **Community:** density banner, filter chips, claim a free station (enter your name) →
+   "I'm Done • Release". Report a broken machine (note required). Tap the station → Station Log.
+   Tap **Station Busy? Swap** on a busy bench.
+3. **Workouts:** + New → build a routine (validation), or Edit Push Day A. Start Push Day A:
+   PREV values, tick sets → rest timer, Station Busy? Swap (PRs, scope switch), Form Guide
+   animation, Finish → Summary with NEW PR and **Training Day activated**.
+4. **Nutrition:** today now shows **⚡ TRAINING DAY ACTIVE** with higher targets. Add Food → search →
+   servings → Log. Create a custom food. Tap an item to change the amount, swipe to delete.
+   Go back to Yesterday. Edit targets → preview.
+5. **About:** version and device info, developer details, storage counts (they've grown from the
+   demo), change name, Reset Demo Data.
+
+---
+
+## Possible future work
+- Sync stations and reports through Firebase so all members share live status
+- Real looping exercise videos in the Form Guide
+- Charts of volume and nutrition over time
 - **Day 7** — About page, final polish, testing, report

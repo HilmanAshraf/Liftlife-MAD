@@ -32,16 +32,85 @@ public class LiftLifeRepository
         return cats;
     }
 
-    public async Task UpdateStationStatusAsync(int stationId, StationStatus status, string? note, string reportedBy)
+    /// <summary>
+    /// Changes a station's live status AND adds an entry to its maintenance log.
+    /// </summary>
+    /// <param name="claimedByMe">True when this member is claiming the station for themselves.</param>
+    public async Task UpdateStationStatusAsync(int stationId, StationStatus status, string? note, string reportedBy,
+        bool claimedByMe = false)
     {
         var conn = await _db.GetConnectionAsync();
         var station = await conn.FindAsync<Station>(stationId);
         if (station is null) return;
+
         station.Status = status;
         station.StatusNote = note;
         station.ReportedBy = reportedBy;
         station.LastUpdated = DateTime.Now;
+        station.ClaimedByMe = claimedByMe; // any other update ends my claim
         await conn.UpdateAsync(station);
+
+        await conn.InsertAsync(new StationReport
+        {
+            StationId = stationId,
+            Status = status,
+            Note = note,
+            ReportedBy = reportedBy,
+            ReportedAt = station.LastUpdated
+        });
+    }
+
+    public async Task<Station?> GetStationAsync(int stationId)
+    {
+        var conn = await _db.GetConnectionAsync();
+        return await conn.FindAsync<Station>(stationId);
+    }
+
+    /// <summary>A station's maintenance log, newest first.</summary>
+    public async Task<List<StationReport>> GetStationReportsAsync(int stationId)
+    {
+        var conn = await _db.GetConnectionAsync();
+        return await conn.Table<StationReport>()
+            .Where(r => r.StationId == stationId)
+            .OrderByDescending(r => r.ReportedAt)
+            .ToListAsync();
+    }
+
+    // ---------------- Member profile ----------------
+
+    public async Task<string?> GetMemberNameAsync() => (await GetSettingsAsync()).MemberName;
+
+    public async Task SetMemberNameAsync(string name)
+    {
+        var settings = await GetSettingsAsync();
+        settings.MemberName = name.Trim();
+        await SaveSettingsAsync(settings);
+    }
+
+    // ---------------- Storage (About page) ----------------
+
+    /// <summary>Row counts per table, shown on the About page.</summary>
+    public async Task<List<(string label, int count)>> GetStorageStatsAsync()
+    {
+        var conn = await _db.GetConnectionAsync();
+        return new List<(string, int)>
+        {
+            ("Gym stations", await conn.Table<Station>().CountAsync()),
+            ("Station reports", await conn.Table<StationReport>().CountAsync()),
+            ("Exercises", await conn.Table<Exercise>().CountAsync()),
+            ("Routines", await conn.Table<Routine>().CountAsync()),
+            ("Workouts completed", await conn.Table<WorkoutSession>().Where(s => s.IsCompleted).CountAsync()),
+            ("Sets logged", await conn.Table<SetLog>().CountAsync()),
+            ("Foods", await conn.Table<FoodItem>().CountAsync()),
+            ("Meal entries", await conn.Table<MealLog>().CountAsync()),
+        };
+    }
+
+    /// <summary>Deletes all data; the next query recreates the database with sample data.</summary>
+    public async Task ResetAllDataAsync()
+    {
+        await _db.ResetAsync();
+        await _db.GetConnectionAsync();
     }
 
     /// <summary>

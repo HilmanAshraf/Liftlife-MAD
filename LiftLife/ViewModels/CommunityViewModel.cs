@@ -101,10 +101,17 @@ public class CommunityViewModel : BaseViewModel
         await LoadAsync();
     }
 
-    /// <summary>Marks a free station as busy (claimed by this user).</summary>
-    public async Task ClaimAsync(Station station)
+    /// <summary>Marks a free station as busy, claimed by this member.</summary>
+    public async Task ClaimAsync(Station station, string memberName)
     {
-        await _repo.UpdateStationStatusAsync(station.Id, StationStatus.Busy, "Occupied", "You");
+        await _repo.UpdateStationStatusAsync(station.Id, StationStatus.Busy, "In use", memberName, claimedByMe: true);
+        await LoadAsync();
+    }
+
+    /// <summary>"I'm Done": frees a station this member claimed, so others can use it.</summary>
+    public async Task ReleaseAsync(Station station, string memberName)
+    {
+        await _repo.UpdateStationStatusAsync(station.Id, StationStatus.Free, "Released", memberName);
         await LoadAsync();
     }
 

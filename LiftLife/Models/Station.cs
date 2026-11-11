@@ -30,12 +30,25 @@ public class Station
 
     public DateTime LastUpdated { get; set; } = DateTime.Now;
 
+    /// <summary>True when this member claimed the station, so they can release it when done.</summary>
+    public bool ClaimedByMe { get; set; }
+
+    /// <summary>A "Busy" report older than this is probably out of date.</summary>
+    public const int StaleAfterMinutes = 45;
+
     // ----- Convenience properties for the UI (not stored) -----
+
+    /// <summary>Busy for a long time with no update (and not claimed by me) — may be free now.</summary>
+    [Ignore]
+    public bool IsStale =>
+        Status == StationStatus.Busy && !ClaimedByMe &&
+        (DateTime.Now - LastUpdated).TotalMinutes >= StaleAfterMinutes;
 
     [Ignore]
     public string StatusLabel => Status switch
     {
         StationStatus.Free => "FREE",
+        StationStatus.Busy when IsStale => "BUSY?",
         StationStatus.Busy => "BUSY",
         StationStatus.OutOfOrder => "OUT OF ORDER",
         _ => "UNKNOWN"
@@ -45,8 +58,10 @@ public class Station
     [Ignore]
     public string DetailLine => Status switch
     {
+        StationStatus.Busy when ClaimedByMe => $"In use by you • since {RelativeUpdated}",
+        StationStatus.Busy when IsStale => $"Last reported busy {RelativeUpdated} by {ReportedBy ?? "a member"} • may be free now",
         StationStatus.Busy => $"Occupied • Reported {RelativeUpdated} by {ReportedBy ?? "a member"}",
-        StationStatus.Free => $"Free • Updated {RelativeUpdated}",
+        StationStatus.Free => $"Free • Updated {RelativeUpdated}{(string.IsNullOrWhiteSpace(ReportedBy) ? "" : $" by {ReportedBy}")}",
         _ => $"{(string.IsNullOrWhiteSpace(StatusNote) ? "Under maintenance" : StatusNote)} • Reported {RelativeUpdated}"
     };
 
@@ -55,20 +70,11 @@ public class Station
     public string PrimaryActionText => Status switch
     {
         StationStatus.Free => "Claim Station",
+        StationStatus.Busy when ClaimedByMe => "I'm Done • Release",
         StationStatus.Busy => "Station Busy? Swap",
         _ => "Find Alternative"
     };
 
     [Ignore]
-    public string RelativeUpdated
-    {
-        get
-        {
-            var span = DateTime.Now - LastUpdated;
-            if (span.TotalMinutes < 1) return "just now";
-            if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes}m ago";
-            if (span.TotalHours < 24) return $"{(int)span.TotalHours}h ago";
-            return LastUpdated.ToString("dd MMM");
-        }
-    }
+    public string RelativeUpdated => Services.TimeText.Relative(LastUpdated);
 }

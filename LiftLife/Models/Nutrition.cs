@@ -118,6 +118,9 @@ public class UserSettings
 
     public DayType TodayType { get; set; } = DayType.Rest;
 
+    /// <summary>Name shown on this member's station reports and claims (asked for once).</summary>
+    public string? MemberName { get; set; }
+
     /// <summary>Date (yyyy-MM-dd) of the last completed workout. Used to auto-switch to Training Day.</summary>
     public string? LastTrainingDate { get; set; }
 

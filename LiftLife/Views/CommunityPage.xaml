@@ -15,7 +15,7 @@
         <conv:StatusToTextColorConverter x:Key="StatusFg" />
     </ContentPage.Resources>
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="14" Padding="20,12,20,0">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" RowSpacing="14" Padding="20,12,20,0">
 
         <!-- Top app bar: app title + facility geotag -->
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
@@ -69,8 +69,11 @@
             </HorizontalStackLayout>
         </ScrollView>
 
+        <Label Grid.Row="3" Text="STATIONS  •  tap a station for its maintenance log"
+               Style="{StaticResource MutedCaption}" Margin="4,0,0,0" />
+
         <!-- Station status cards with pull-to-refresh -->
-        <RefreshView Grid.Row="3"
+        <RefreshView Grid.Row="4"
                      Command="{Binding RefreshCommand}"
                      IsRefreshing="{Binding IsRefreshing}"
                      RefreshColor="{StaticResource Primary}">
@@ -89,7 +92,11 @@
                     <DataTemplate x:DataType="models:Station">
                         <Border Style="{StaticResource Card}">
                             <VerticalStackLayout Spacing="12">
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <!-- Tap the top of the card to open the maintenance log -->
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" BackgroundColor="Transparent">
+                                    <Grid.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnStationTapped" />
+                                    </Grid.GestureRecognizers>
                                     <VerticalStackLayout Spacing="3">
                                         <Label Text="{Binding Name}" Style="{StaticResource CardTitle}" />
                                         <Label Text="{Binding DetailLine}" Style="{StaticResource SubtleText}" />

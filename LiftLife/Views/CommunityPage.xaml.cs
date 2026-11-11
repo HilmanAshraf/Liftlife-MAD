@@ -1,3 +1,4 @@
+using LiftLife.Data;
 using LiftLife.Models;
 using LiftLife.Services;
 using LiftLife.ViewModels;
@@ -11,11 +12,13 @@ namespace LiftLife.Views;
 public partial class CommunityPage : ContentPage
 {
     private readonly CommunityViewModel _vm;
+    private readonly LiftLifeRepository _repo;
 
     public CommunityPage()
     {
         InitializeComponent();
         _vm = ServiceHelper.Get<CommunityViewModel>();
+        _repo = ServiceHelper.Get<LiftLifeRepository>();
         BindingContext = _vm;
     }
 
@@ -31,9 +34,16 @@ public partial class CommunityPage : ContentPage
             await _vm.SelectCategoryAsync(chip);
     }
 
+    /// <summary>Tap a station card to open its maintenance log.</summary>
+    private async void OnStationTapped(object? sender, TappedEventArgs e)
+    {
+        if ((sender as BindableObject)?.BindingContext is Station station)
+            await Navigation.PushAsync(new StationDetailPage(station.Id));
+    }
+
     /// <summary>
     /// The main card button changes with status:
-    /// Free = claim the station, Busy / Out of Order = suggest a swap.
+    /// Free = claim it, Busy (mine) = release it, Busy / Out of Order = suggest a swap.
     /// </summary>
     private async void OnPrimaryActionClicked(object? sender, EventArgs e)
     {
@@ -42,12 +52,26 @@ public partial class CommunityPage : ContentPage
 
         if (station.Status == StationStatus.Free)
         {
+            var name = await MemberNamePrompt.EnsureAsync(this, _repo);
+            if (name is null) return;
+
             var confirm = await DisplayAlertAsync("Claim Station",
                 $"Mark {station.Name} as in use by you?", "Claim", "Cancel");
             if (!confirm) return;
 
-            await _vm.ClaimAsync(station);
+            await _vm.ClaimAsync(station, name);
             Vibrate();
+            return;
+        }
+
+        if (station.Status == StationStatus.Busy && station.ClaimedByMe)
+        {
+            var name = await MemberNamePrompt.EnsureAsync(this, _repo);
+            if (name is null) return;
+
+            await _vm.ReleaseAsync(station, name);
+            Vibrate();
+            await DisplayAlertAsync("Station Released", $"{station.Name} is now free for the next member. Thanks!", "OK");
             return;
         }
 
@@ -72,9 +96,10 @@ public partial class CommunityPage : ContentPage
         var choice = await DisplayActionSheetAsync(
             $"Same muscle group: {station.MuscleGroup}", "Cancel", null, labels);
 
-        var picked = options.FirstOrDefault(o => labels[options.IndexOf(o)] == choice);
-        if (picked is null) return;
+        var index = Array.IndexOf(labels, choice);
+        if (index < 0) return;
 
+        var picked = options[index];
         Vibrate();
         await DisplayAlertAsync("Swap Suggested",
             $"Do {picked.Exercise.Name} instead.\n\nForm cue: {picked.Exercise.FormCue}", "Got it");
@@ -85,8 +110,11 @@ public partial class CommunityPage : ContentPage
         if ((sender as BindableObject)?.BindingContext is not Station station)
             return;
 
+        var name = await MemberNamePrompt.EnsureAsync(this, _repo);
+        if (name is null) return;
+
         // Open the Report Status modal; reload the list after it saves.
-        await Navigation.PushModalAsync(new ReportStatusPage(station, _vm.LoadAsync));
+        await Navigation.PushModalAsync(new ReportStatusPage(station, name, _vm.LoadAsync));
     }
 
     /// <summary>Short haptic tap as feedback (MAUI HapticFeedback API).</summary>

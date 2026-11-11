@@ -12,6 +12,9 @@ public class LiftLifeDatabase
 {
     private SQLiteAsyncConnection? _connection;
 
+    // Makes sure only one caller creates/seeds the database at a time (and not during a reset).
+    private readonly SemaphoreSlim _initLock = new(1, 1);
+
     public const string DatabaseFilename = "liftlife.db3";
 
     public static string DatabasePath =>
@@ -31,21 +34,59 @@ public class LiftLifeDatabase
         if (_connection is not null)
             return _connection;
 
-        _connection = new SQLiteAsyncConnection(DatabasePath, Flags);
+        await _initLock.WaitAsync();
+        try
+        {
+            if (_connection is not null)
+                return _connection; // another caller finished setting up while we waited
 
-        await _connection.CreateTableAsync<Station>();
-        await _connection.CreateTableAsync<Exercise>();
-        await _connection.CreateTableAsync<Routine>();
-        await _connection.CreateTableAsync<RoutineExercise>();
-        await _connection.CreateTableAsync<WorkoutSession>();
-        await _connection.CreateTableAsync<SetLog>();
-        await _connection.CreateTableAsync<FoodItem>();
-        await _connection.CreateTableAsync<MealLog>();
-        await _connection.CreateTableAsync<UserSettings>();
+            var conn = new SQLiteAsyncConnection(DatabasePath, Flags);
 
-        await SeedAsync(_connection);
+            // CreateTableAsync also adds any new columns to existing tables.
+            await conn.CreateTableAsync<Station>();
+            await conn.CreateTableAsync<StationReport>();
+            await conn.CreateTableAsync<Exercise>();
+            await conn.CreateTableAsync<Routine>();
+            await conn.CreateTableAsync<RoutineExercise>();
+            await conn.CreateTableAsync<WorkoutSession>();
+            await conn.CreateTableAsync<SetLog>();
+            await conn.CreateTableAsync<FoodItem>();
+            await conn.CreateTableAsync<MealLog>();
+            await conn.CreateTableAsync<UserSettings>();
 
-        return _connection;
+            await SeedAsync(conn);
+
+            _connection = conn;
+            return conn;
+        }
+        finally
+        {
+            _initLock.Release();
+        }
+    }
+
+    /// <summary>
+    /// Deletes the database file so the app starts again with fresh sample data.
+    /// Used by "Reset Demo Data" on the About page.
+    /// </summary>
+    public async Task ResetAsync()
+    {
+        await _initLock.WaitAsync();
+        try
+        {
+            if (_connection is not null)
+            {
+                await _connection.CloseAsync();
+                _connection = null;
+            }
+
+            if (File.Exists(DatabasePath))
+                File.Delete(DatabasePath);
+        }
+        finally
+        {
+            _initLock.Release();
+        }
     }
 
     // ---------------------------------------------------------------
@@ -55,11 +96,74 @@ public class LiftLifeDatabase
     {
         await SeedExercisesAsync(db);
         await SeedStationsAsync(db);
+        await SeedStationReportsAsync(db);
         await SeedFoodsAsync(db);
         await SeedSettingsAsync(db);
         await SeedSampleRoutineAsync(db);
         await SeedWorkoutHistoryAsync(db);
         await SeedMealsAsync(db);
+    }
+
+    /// <summary>
+    /// Maintenance-log history: a few past reports for some stations, then one row matching
+    /// each station's current status, so every station has a believable log.
+    /// </summary>
+    private static async Task SeedStationReportsAsync(SQLiteAsyncConnection db)
+    {
+        if (await db.Table<StationReport>().CountAsync() > 0) return;
+
+        var now = DateTime.Now;
+        var history = new Dictionary<string, (double minutesAgo, StationStatus status, string? note, string by)[]>
+        {
+            ["Flat Barbell Bench #1"] = new[]
+            {
+                (180.0, StationStatus.Free, (string?)null, "Sara"),
+                (95.0, StationStatus.Busy, "Occupied", "Imran"),
+                (52.0, StationStatus.Free, null, "Imran"),
+            },
+            ["Squat Rack #1"] = new[]
+            {
+                (1500.0, StationStatus.Busy, (string?)"Occupied", "Daniel"),
+                (190.0, StationStatus.OutOfOrder, "Safety pin bent", "Aina"),
+            },
+            ["Cable Crossover #1"] = new[]
+            {
+                (7200.0, StationStatus.OutOfOrder, (string?)"Pulley cable frayed", "Alex"),
+                (4300.0, StationStatus.Free, "Cable replaced by staff", "Staff"),
+            },
+            ["Lat Pulldown #1"] = new[]
+            {
+                (240.0, StationStatus.Free, (string?)null, "Sara"),
+            },
+        };
+
+        foreach (var station in await db.Table<Station>().ToListAsync())
+        {
+            if (history.TryGetValue(station.Name, out var past))
+            {
+                foreach (var (minutesAgo, status, note, by) in past)
+                {
+                    await db.InsertAsync(new StationReport
+                    {
+                        StationId = station.Id,
+                        Status = status,
+                        Note = note,
+                        ReportedBy = by,
+                        ReportedAt = now.AddMinutes(-minutesAgo)
+                    });
+                }
+            }
+
+            // The current status is always the latest entry in the log.
+            await db.InsertAsync(new StationReport
+            {
+                StationId = station.Id,
+                Status = station.Status,
+                Note = station.StatusNote,
+                ReportedBy = station.ReportedBy ?? "Community",
+                ReportedAt = station.LastUpdated
+            });
+        }
     }
 
     /// <summary>
