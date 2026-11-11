@@ -10,20 +10,11 @@
         <!-- Center brand block -->
         <VerticalStackLayout Grid.Row="1" Spacing="14" HorizontalOptions="Center" VerticalOptions="Center">
 
-            <!-- Logo squircle -->
-            <Border BackgroundColor="{StaticResource Primary}"
-                    HeightRequest="96" WidthRequest="96"
-                    HorizontalOptions="Center">
-                <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="26" />
-                </Border.StrokeShape>
-                <Label Text="L"
-                       FontSize="54"
-                       FontAttributes="Bold,Italic"
-                       TextColor="{StaticResource PrimaryDarkText}"
-                       HorizontalOptions="Center"
-                       VerticalOptions="Center" />
-            </Border>
+            <!-- Logo: same artwork as the app icon (Resources/Images/logo.svg) -->
+            <Image Source="logo.png"
+                   HeightRequest="96" WidthRequest="96"
+                   HorizontalOptions="Center"
+                   SemanticProperties.Description="LiftLife logo" />
 
             <Label Text="LiftLife"
                    FontSize="34"

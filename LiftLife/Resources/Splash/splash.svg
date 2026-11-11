@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Launch screen logo. Same design as Resources/AppIcon/appiconfg.svg,
+     scaled to 80% (icon squircle 200px -> 160px here) so the two always match. -->
 <svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect x="48" y="48" width="160" height="160" rx="44" fill="#E9F558"/>
-  <!-- Stylised serif "L" drawn as a filled path -->
-  <path d="M104 92
-           h22
-           v58
-           h40
-           v22
-           h-62
+  <!-- Lime squircle (corner radius = 28% of size, same as the icon) -->
+  <rect x="48" y="48" width="160" height="160" rx="44.8" fill="#E9F558"/>
+  <!-- Stylised "L" (same proportions as the icon) -->
+  <path d="M102.4 86.4
+           h22.4
+           v59.2
+           h41.6
+           v22.4
+           h-64
            z"
         fill="#0B0B0F"/>
-  <!-- small serif foot accent -->
-  <rect x="104" y="92" width="34" height="12" rx="3" fill="#0B0B0F"/>
 </svg>

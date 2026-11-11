@@ -99,7 +99,10 @@ the splash screen, and the SQLite plumbing.
 - **`Resources/AppIcon/appicon.svg` + `appiconfg.svg`** — the custom app icon: lime "L"
   squircle on a dark background.
 
-- **`Resources/Splash/splash.svg`** — the splash image used at OS launch.
+- **`Resources/Splash/splash.svg`** — the splash image used at OS launch. Uses the exact
+  same lime squircle + bold "L" as the app icon, scaled to 80%.
+- **`Resources/Images/logo.svg`** — the same logo as a normal image, shown on the in-app
+  `SplashPage`. So the icon, the iOS launch screen and the splash page all match.
 
 - **`Resources/Images/tab_*.svg`** — the four bottom-tab icons.
 
