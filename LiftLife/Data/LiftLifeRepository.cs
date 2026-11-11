@@ -239,6 +239,62 @@ public class LiftLifeRepository
         }
     }
 
+    /// <summary>
+    /// The sets logged for an exercise in the most recent session that included it.
+    /// Fills the PREV column in the live tracker.
+    /// </summary>
+    public async Task<List<SetLog>> GetPreviousSetsAsync(int exerciseId)
+    {
+        var conn = await _db.GetConnectionAsync();
+        var logs = await conn.Table<SetLog>().Where(s => s.ExerciseId == exerciseId).ToListAsync();
+        if (logs.Count == 0) return new();
+
+        var lastSessionId = logs.Max(s => s.SessionId);
+        return logs.Where(s => s.SessionId == lastSessionId).OrderBy(s => s.SetNumber).ToList();
+    }
+
+    /// <summary>Personal record = heaviest set ever logged (ties broken by more reps).</summary>
+    public async Task<SetLog?> GetPersonalRecordAsync(int exerciseId)
+    {
+        var conn = await _db.GetConnectionAsync();
+        var logs = await conn.Table<SetLog>().Where(s => s.ExerciseId == exerciseId).ToListAsync();
+        return logs.OrderByDescending(s => s.WeightKg).ThenByDescending(s => s.Reps).FirstOrDefault();
+    }
+
+    /// <summary>Permanent swap: the routine will use the new exercise from now on.</summary>
+    public async Task UpdateRoutineExerciseAsync(int routineExerciseId, int newExerciseId)
+    {
+        var conn = await _db.GetConnectionAsync();
+        var row = await conn.FindAsync<RoutineExercise>(routineExerciseId);
+        if (row is null) return;
+        row.ExerciseId = newExerciseId;
+        await conn.UpdateAsync(row);
+    }
+
+    /// <summary>
+    /// Dynamic macro trigger: finishing a workout switches today to a Training Day,
+    /// which raises the calorie and carb targets. Returns the before/after values.
+    /// </summary>
+    public async Task<TrainingDayChange> ActivateTrainingDayAsync()
+    {
+        var settings = await GetSettingsAsync();
+        var already = settings.IsTrainingToday;
+
+        var change = new TrainingDayChange
+        {
+            WasAlreadyTrainingDay = already,
+            CaloriesBefore = already ? settings.BaseCalories : settings.RestCalories,
+            CarbsBefore = already ? settings.BaseCarbsG : settings.RestCarbsG,
+            CaloriesAfter = settings.BaseCalories,
+            CarbsAfter = settings.BaseCarbsG
+        };
+
+        settings.TodayType = DayType.Training;
+        settings.LastTrainingDate = DateTime.Today.ToString("yyyy-MM-dd");
+        await SaveSettingsAsync(settings);
+        return change;
+    }
+
     public async Task<WorkoutSession?> GetLastCompletedSessionAsync()
     {
         var conn = await _db.GetConnectionAsync();

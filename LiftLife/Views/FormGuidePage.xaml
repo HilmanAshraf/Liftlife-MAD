@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
+             x:Class="LiftLife.Views.FormGuidePage"
+             ios:Page.ModalPresentationStyle="PageSheet"
+             BackgroundColor="{StaticResource AppBackground}">
+
+    <Grid RowDefinitions="Auto,*" Padding="20,24,20,0" RowSpacing="16">
+
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
+            <Button Text="✕"
+                    WidthRequest="40" HeightRequest="40" CornerRadius="20" Padding="0"
+                    BackgroundColor="{StaticResource SurfaceElevated}"
+                    TextColor="{StaticResource TextPrimary}" FontSize="16"
+                    Clicked="OnCloseClicked" />
+            <VerticalStackLayout Grid.Column="1" HorizontalOptions="Center" VerticalOptions="Center">
+                <Label Text="Form Guide" Style="{StaticResource MutedCaption}" HorizontalOptions="Center" />
+                <Label x:Name="TitleLabel" Style="{StaticResource CardTitle}" HorizontalOptions="Center"
+                       HorizontalTextAlignment="Center" />
+            </VerticalStackLayout>
+            <ContentView Grid.Column="2" WidthRequest="40" />
+        </Grid>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="14" Padding="0,0,0,40">
+
+                <Label x:Name="TagLabel" Style="{StaticResource SubtleText}" HorizontalOptions="Center" />
+
+                <!-- Looping tempo guide (animated with the MAUI animation API) -->
+                <Border Style="{StaticResource CardElevated}">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18">
+                        <Grid WidthRequest="64" HeightRequest="170">
+                            <Border BackgroundColor="{StaticResource SurfaceCard}" StrokeThickness="0">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="14" />
+                                </Border.StrokeShape>
+                            </Border>
+                            <Border x:Name="TempoBar"
+                                    BackgroundColor="{StaticResource Primary}" StrokeThickness="0"
+                                    HeightRequest="26" Margin="8" VerticalOptions="Start">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="8" />
+                                </Border.StrokeShape>
+                            </Border>
+                        </Grid>
+                        <VerticalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="Center">
+                            <Label Text="REP TEMPO" Style="{StaticResource MutedCaption}" />
+                            <Label x:Name="PhaseLabel" Text="READY" FontSize="24" FontAttributes="Bold"
+                                   TextColor="{StaticResource Primary}" />
+                            <Label Text="Lower for 2 seconds, pause briefly, then lift with control for 1 second."
+                                   Style="{StaticResource SubtleText}" />
+                            <Label x:Name="RepLabel" Text="Rep 0" Style="{StaticResource BodyText}" FontAttributes="Bold" />
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+
+                <!-- Key biomechanical cues -->
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="KEY FORM CUES" Style="{StaticResource MutedCaption}" />
+                        <VerticalStackLayout x:Name="CueList" Spacing="8" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Safety -->
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="SAFETY CHECK" Style="{StaticResource MutedCaption}" />
+                        <VerticalStackLayout x:Name="SafetyList" Spacing="8" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border x:Name="SetupCard" Style="{StaticResource Card}" IsVisible="False">
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="YOUR MACHINE SETUP" Style="{StaticResource MutedCaption}" />
+                        <Label x:Name="SetupLabel" Style="{StaticResource BodyText}" />
+                    </VerticalStackLayout>
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

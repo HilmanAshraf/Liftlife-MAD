@@ -97,6 +97,19 @@
         <Setter Property="HeightRequest" Value="44" />
     </Style>
 
+    <!-- Small rounded box that wraps an Entry (sets, reps, weight...) -->
+    <Style x:Key="FieldBox" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource SurfaceElevated}" />
+        <Setter Property="Stroke" Value="{StaticResource StrokeColor}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Padding" Value="10,0" />
+        <Setter Property="StrokeShape">
+            <Setter.Value>
+                <RoundRectangle CornerRadius="10" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- Entry -->
     <Style x:Key="LiftEntry" TargetType="Entry">
         <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />

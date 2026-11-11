@@ -81,6 +81,18 @@ public class UserSettings
 
     public DayType TodayType { get; set; } = DayType.Rest;
 
+    /// <summary>Date (yyyy-MM-dd) of the last completed workout. Used to auto-switch to Training Day.</summary>
+    public string? LastTrainingDate { get; set; }
+
+    [Ignore]
+    public bool IsTrainingToday => LastTrainingDate == DateTime.Today.ToString("yyyy-MM-dd");
+
+    [Ignore]
+    public int RestCalories => (int)Math.Round(BaseCalories * RestDayCalorieFactor);
+
+    [Ignore]
+    public double RestCarbsG => Math.Round(BaseCarbsG * RestDayCarbFactor);
+
     // ----- Computed targets for the active day (not stored) -----
 
     [Ignore]

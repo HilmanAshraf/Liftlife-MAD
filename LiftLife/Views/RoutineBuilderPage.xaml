@@ -12,21 +12,6 @@
         <ToolbarItem Text="Save" Clicked="OnSaveClicked" />
     </ContentPage.ToolbarItems>
 
-    <ContentPage.Resources>
-        <!-- Small boxed numeric input used for sets / reps / rest -->
-        <Style x:Key="FieldBox" TargetType="Border">
-            <Setter Property="BackgroundColor" Value="{StaticResource SurfaceElevated}" />
-            <Setter Property="Stroke" Value="{StaticResource StrokeColor}" />
-            <Setter Property="StrokeThickness" Value="1" />
-            <Setter Property="Padding" Value="10,0" />
-            <Setter Property="StrokeShape">
-                <Setter.Value>
-                    <RoundRectangle CornerRadius="10" />
-                </Setter.Value>
-            </Setter>
-        </Style>
-    </ContentPage.Resources>
-
     <ScrollView>
         <!-- extra bottom padding keeps the Save button clear of the floating tab bar -->
         <VerticalStackLayout Padding="20,16,20,130" Spacing="14">

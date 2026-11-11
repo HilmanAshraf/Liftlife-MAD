@@ -58,6 +58,78 @@ public class LiftLifeDatabase
         await SeedFoodsAsync(db);
         await SeedSettingsAsync(db);
         await SeedSampleRoutineAsync(db);
+        await SeedWorkoutHistoryAsync(db);
+    }
+
+    /// <summary>
+    /// Two past Push Day A sessions with logged sets, so the live tracker can show
+    /// PREV values and the swap sheet can show personal records on first launch.
+    /// </summary>
+    private static async Task SeedWorkoutHistoryAsync(SQLiteAsyncConnection db)
+    {
+        if (await db.Table<SetLog>().CountAsync() > 0) return;
+
+        var push = await db.Table<Routine>().Where(r => r.Name == "Push Day A").FirstOrDefaultAsync();
+        if (push is null) return;
+
+        // A week ago the bench was busy, so the member swapped to dumbbells.
+        await SeedSessionAsync(db, push, DateTime.Today.AddDays(-7).AddHours(17), 52, new[]
+        {
+            ("Dumbbell Flat Bench Press", new[] { (28.0, 8), (28.0, 8), (26.0, 9) }),
+            ("Incline Dumbbell Press",    new[] { (22.0, 10), (22.0, 10), (22.0, 9) }),
+            ("Machine Shoulder Press",    new[] { (35.0, 10), (35.0, 10), (35.0, 10) }),
+            ("Cable Lateral Raise",       new[] { (7.5, 15), (7.5, 15), (7.5, 14) }),
+            ("Triceps Rope Pushdown",     new[] { (22.5, 12), (22.5, 12), (22.5, 12) }),
+        });
+
+        await SeedSessionAsync(db, push, DateTime.Today.AddDays(-3).AddHours(18), 49, new[]
+        {
+            ("Barbell Bench Press",    new[] { (75.0, 10), (80.0, 6), (80.0, 5) }),
+            ("Incline Dumbbell Press", new[] { (24.0, 10), (24.0, 10), (24.0, 9) }),
+            ("Machine Shoulder Press", new[] { (40.0, 10), (40.0, 10), (40.0, 9) }),
+            ("Cable Lateral Raise",    new[] { (7.5, 15), (7.5, 15), (7.5, 15) }),
+            ("Triceps Rope Pushdown",  new[] { (25.0, 12), (25.0, 12), (25.0, 11) }),
+        });
+    }
+
+    private static async Task SeedSessionAsync(SQLiteAsyncConnection db, Routine routine, DateTime start, int minutes,
+        (string exercise, (double weight, int reps)[] sets)[] plan)
+    {
+        var session = new WorkoutSession
+        {
+            RoutineId = routine.Id,
+            RoutineName = routine.Name,
+            StartedAt = start,
+            CompletedAt = start.AddMinutes(minutes),
+            IsCompleted = true
+        };
+        await db.InsertAsync(session);
+
+        double volume = 0;
+        foreach (var (exerciseName, sets) in plan)
+        {
+            var exercise = await db.Table<Exercise>().Where(e => e.Name == exerciseName).FirstOrDefaultAsync();
+            if (exercise is null) continue;
+
+            for (var i = 0; i < sets.Length; i++)
+            {
+                var (weight, reps) = sets[i];
+                await db.InsertAsync(new SetLog
+                {
+                    SessionId = session.Id,
+                    ExerciseId = exercise.Id,
+                    ExerciseName = exercise.Name,
+                    SetNumber = i + 1,
+                    WeightKg = weight,
+                    Reps = reps,
+                    IsDone = true
+                });
+                volume += weight * reps;
+            }
+        }
+
+        session.TotalVolumeKg = volume;
+        await db.UpdateAsync(session);
     }
 
     private static async Task SeedExercisesAsync(SQLiteAsyncConnection db)

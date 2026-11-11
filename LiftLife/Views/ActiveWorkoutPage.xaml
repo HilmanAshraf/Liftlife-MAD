@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:LiftLife.ViewModels"
+             x:Class="LiftLife.Views.ActiveWorkoutPage"
+             x:DataType="vm:ActiveWorkoutViewModel"
+             Shell.NavBarIsVisible="False"
+             Shell.TabBarIsVisible="False"
+             BackgroundColor="{StaticResource AppBackground}">
+
+    <Grid RowDefinitions="Auto,Auto,*">
+
+        <!-- Session action bar: Cancel | routine + clock | Finish -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Padding="16,8,16,4">
+            <Button Text="Cancel"
+                    BackgroundColor="Transparent"
+                    TextColor="{StaticResource TextSecondary}"
+                    FontSize="15" Padding="4,0"
+                    Clicked="OnCancelClicked" />
+            <VerticalStackLayout Grid.Column="1" HorizontalOptions="Center" VerticalOptions="Center" Spacing="2">
+                <Label Text="{Binding RoutineName}" Style="{StaticResource CardTitle}" HorizontalOptions="Center" />
+                <Label Style="{StaticResource SubtleText}" HorizontalOptions="Center" FontSize="12">
+                    <Label.FormattedText>
+                        <FormattedString>
+                            <Span Text="⏱ " />
+                            <Span Text="{Binding ElapsedText}" />
+                            <Span Text="   •   " />
+                            <Span Text="{Binding VolumeText}" />
+                        </FormattedString>
+                    </Label.FormattedText>
+                </Label>
+            </VerticalStackLayout>
+            <Button Grid.Column="2"
+                    Text="Finish"
+                    Style="{StaticResource PrimaryButton}"
+                    HeightRequest="38" CornerRadius="19" Padding="18,0" FontSize="14"
+                    Clicked="OnFinishClicked" />
+        </Grid>
+
+        <!-- Overall progress -->
+        <VerticalStackLayout Grid.Row="1" Padding="20,8,20,4" Spacing="6">
+            <Label Text="{Binding ProgressText}" Style="{StaticResource MutedCaption}" />
+            <ProgressBar Progress="{Binding ProgressValue}" ProgressColor="{StaticResource Primary}" />
+        </VerticalStackLayout>
+
+        <ScrollView Grid.Row="2">
+            <VerticalStackLayout Padding="20,10,20,150" Spacing="14">
+
+                <!-- Exercise block (swipe left/right to change exercise) -->
+                <Border Style="{StaticResource Card}">
+                    <Border.GestureRecognizers>
+                        <SwipeGestureRecognizer Direction="Left" Swiped="OnSwipedLeft" />
+                        <SwipeGestureRecognizer Direction="Right" Swiped="OnSwipedRight" />
+                    </Border.GestureRecognizers>
+
+                    <VerticalStackLayout Spacing="12">
+                        <VerticalStackLayout Spacing="3">
+                            <Label Text="{Binding ExerciseTitle}" Style="{StaticResource CardTitle}" FontSize="20" />
+                            <Label Text="{Binding CurrentExercise.TagLine}" Style="{StaticResource SubtleText}" />
+                            <Label Text="{Binding CurrentExercise.SwapText}"
+                                   IsVisible="{Binding CurrentExercise.HasSwap}"
+                                   TextColor="{StaticResource Primary}" FontSize="12" />
+                            <Label Text="{Binding CurrentExercise.SetupNoteText}"
+                                   IsVisible="{Binding CurrentExercise.HasSetupNote}"
+                                   Style="{StaticResource SubtleText}" FontSize="12" />
+                        </VerticalStackLayout>
+
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <Button Text="(?) Form Guide"
+                                    BackgroundColor="Transparent"
+                                    TextColor="{StaticResource Primary}"
+                                    FontSize="14" Padding="0"
+                                    HorizontalOptions="Start"
+                                    Clicked="OnFormGuideClicked" />
+                            <Button Grid.Column="1"
+                                    Text="Station Busy? Swap"
+                                    Style="{StaticResource DarkButton}"
+                                    HeightRequest="38" Padding="14,0"
+                                    Clicked="OnSwapClicked" />
+                        </Grid>
+
+                        <!-- Set logging table -->
+                        <Grid ColumnDefinitions="34,*,78,62,46" ColumnSpacing="8">
+                            <Label Text="SET" Style="{StaticResource MutedCaption}" />
+                            <Label Grid.Column="1" Text="PREV" Style="{StaticResource MutedCaption}" />
+                            <Label Grid.Column="2" Text="KG" Style="{StaticResource MutedCaption}" HorizontalOptions="Center" />
+                            <Label Grid.Column="3" Text="REPS" Style="{StaticResource MutedCaption}" HorizontalOptions="Center" />
+                            <Label Grid.Column="4" Text="DONE" Style="{StaticResource MutedCaption}" HorizontalOptions="Center" />
+                        </Grid>
+
+                        <VerticalStackLayout Spacing="10" BindableLayout.ItemsSource="{Binding CurrentExercise.Sets}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="vm:SessionSet">
+                                    <Grid ColumnDefinitions="34,*,78,62,46" ColumnSpacing="8">
+                                        <Label Text="{Binding SetNumber}" Style="{StaticResource CardTitle}" FontSize="15"
+                                               VerticalOptions="Center" />
+                                        <Label Grid.Column="1" Text="{Binding PrevText}" Style="{StaticResource SubtleText}"
+                                               FontSize="12" VerticalOptions="Center" />
+
+                                        <Border Grid.Column="2" Style="{StaticResource FieldBox}" Padding="4,0" HeightRequest="44">
+                                            <Entry Text="{Binding Weight}" Keyboard="Numeric" MaxLength="5"
+                                                   IsEnabled="{Binding IsNotDone}"
+                                                   Style="{StaticResource LiftEntry}" HorizontalTextAlignment="Center"
+                                                   Placeholder="kg" />
+                                        </Border>
+                                        <Border Grid.Column="3" Style="{StaticResource FieldBox}" Padding="4,0" HeightRequest="44">
+                                            <Entry Text="{Binding Reps}" Keyboard="Numeric" MaxLength="3"
+                                                   IsEnabled="{Binding IsNotDone}"
+                                                   Style="{StaticResource LiftEntry}" HorizontalTextAlignment="Center" />
+                                        </Border>
+
+                                        <!-- Done checkbox: one tap confirms the set and starts the rest timer -->
+                                        <Border Grid.Column="4"
+                                                WidthRequest="44" HeightRequest="44"
+                                                BackgroundColor="{StaticResource SurfaceElevated}"
+                                                Stroke="{StaticResource StrokeColor}" StrokeThickness="1"
+                                                SemanticProperties.Description="Mark set done">
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="10" />
+                                            </Border.StrokeShape>
+                                            <Border.Triggers>
+                                                <DataTrigger TargetType="Border" Binding="{Binding IsDone}" Value="True">
+                                                    <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                                                    <Setter Property="Stroke" Value="{StaticResource Primary}" />
+                                                </DataTrigger>
+                                            </Border.Triggers>
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer Tapped="OnDoneTapped" />
+                                            </Border.GestureRecognizers>
+                                            <Label Text="✓" FontSize="20" FontAttributes="Bold"
+                                                   TextColor="{StaticResource TextMuted}"
+                                                   HorizontalOptions="Center" VerticalOptions="Center">
+                                                <Label.Triggers>
+                                                    <DataTrigger TargetType="Label" Binding="{Binding IsDone}" Value="True">
+                                                        <Setter Property="TextColor" Value="{StaticResource PrimaryDarkText}" />
+                                                    </DataTrigger>
+                                                </Label.Triggers>
+                                            </Label>
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+
+                        <Button Text="+ Add Set"
+                                BackgroundColor="Transparent"
+                                TextColor="{StaticResource TextPrimary}"
+                                FontAttributes="Bold" FontSize="14" Padding="0"
+                                HorizontalOptions="Start"
+                                Clicked="OnAddSetClicked" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Move between exercises -->
+                <Grid ColumnDefinitions="*,2*" ColumnSpacing="10">
+                    <Button Text="← Previous"
+                            Style="{StaticResource OutlineButton}"
+                            HeightRequest="48"
+                            IsEnabled="{Binding CanGoPrevious}"
+                            Clicked="OnPreviousClicked" />
+                    <Button Grid.Column="1"
+                            Text="{Binding NextButtonText}"
+                            Style="{StaticResource PrimaryButton}"
+                            HeightRequest="48"
+                            Clicked="OnNextClicked" />
+                </Grid>
+
+                <Label Text="Tip: swipe the card left or right to switch exercises."
+                       Style="{StaticResource MutedCaption}" HorizontalOptions="Center" />
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Floating rest timer pill -->
+        <Border Grid.Row="2"
+                IsVisible="{Binding IsResting}"
+                VerticalOptions="End" HorizontalOptions="Center"
+                Margin="0,0,0,34" Padding="20,10,10,10"
+                BackgroundColor="{StaticResource SurfaceElevated}"
+                Stroke="{StaticResource Primary}" StrokeThickness="1.5">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="28" />
+            </Border.StrokeShape>
+            <Border.Shadow>
+                <Shadow Brush="Black" Opacity="0.6" Radius="20" Offset="0,6" />
+            </Border.Shadow>
+            <HorizontalStackLayout Spacing="10">
+                <Label Text="{Binding RestText}" TextColor="{StaticResource Primary}"
+                       FontSize="17" FontAttributes="Bold" VerticalOptions="Center" />
+                <Button Text="+15s" Style="{StaticResource DarkButton}" HeightRequest="36" Padding="12,0"
+                        BackgroundColor="{StaticResource Tertiary}" Clicked="OnAddRestClicked" />
+                <Button Text="Skip" Style="{StaticResource DarkButton}" HeightRequest="36" Padding="12,0"
+                        BackgroundColor="{StaticResource Tertiary}" Clicked="OnSkipRestClicked" />
+            </HorizontalStackLayout>
+        </Border>
+    </Grid>
+</ContentPage>

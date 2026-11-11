@@ -54,7 +54,6 @@ public partial class WorkoutsPage : ContentPage
             return;
         }
 
-        // The live session tracker (screen 3.1) is connected here in the next step.
-        await DisplayAlertAsync(routine.Name, $"{routine.SummaryLine}\n\nReady when you are.", "OK");
+        await Navigation.PushAsync(new ActiveWorkoutPage(routine.Id));
     }
 }

@@ -291,8 +291,7 @@ The ViewModels get the repository through **dependency injection** (registered i
     **START WORKOUT SESSION** and **Edit** buttons
   - **Swipe left to delete** (SwipeView gesture) with a confirmation dialog
   - Pull to refresh
-  - *Start Workout Session* currently confirms the routine; it opens the live session
-    tracker once that screen is built (Day 5).
+  - *Start Workout Session* opens the live session tracker (built on Day 5).
 - **`ViewModels/RoutineBuilderViewModel.cs`** — create/edit logic: name, focus, time,
   add / remove / reorder exercises, and **validation** before saving (name required, time
   5–240 min, at least one exercise, sets 1–10, reps 1–50, rest 0–600 s).
@@ -322,8 +321,78 @@ The ViewModels get the repository through **dependency injection** (registered i
 
 ---
 
+---
+
+## DAY 5 — Active Workout Session, Quick Swap, Form Guide, Workout Summary
+
+**Goal:** The live training experience — log sets in the gym, rest between them, swap
+exercises when a station is busy, and see results that feed into nutrition.
+
+### Flow
+Workouts tab → **START WORKOUT SESSION** → Active Session (3.1)
+→ *Station Busy? Swap* opens Quick Swap (4.3) / *(?) Form Guide* opens Form Guide (4.4)
+→ **Finish** → Workout Summary (4.5) → **Done** → back to Workouts (history now says "Today: …").
+
+### Files and what they do
+- **`ViewModels/ActiveWorkoutViewModel.cs`** — the session "engine":
+  - `SessionExercise` (one exercise with its own sets) and `SessionSet` (one row:
+    SET / PREV / KG / REPS / DONE).
+  - **Loading:** reads the routine's exercises, and for each one the sets from the **last time
+    you did it** (`GetPreviousSetsAsync`). That fills the PREV column and pre-fills the weight;
+    reps are pre-filled from the routine target.
+  - **Timer:** one `IDispatcherTimer` ticking every second drives both the elapsed clock and
+    the **rest countdown**.
+  - **Ticking DONE** validates the weight (0–500 kg) and reps (1–100), locks the row, adds to
+    the volume total, and starts the rest timer for that exercise's rest time. When rest hits
+    zero the phone **vibrates** (`Vibration` API) and gives a **haptic** pulse.
+  - **+ Add Set** copies the last row. **+15s / Skip** adjust the rest.
+  - **Swap:** replaces the current exercise. Sets already ticked stay logged under the
+    original exercise; only the remaining sets move over, and the clock keeps running.
+  - **Finish:** checks for **personal records** (compared with older history, before saving),
+    saves the session + all ticked sets to SQLite, then triggers the training-day macros.
+- **`Views/ActiveWorkoutPage.xaml` / `.cs`** — screen 3.1: Cancel / Finish bar, clock and live
+  volume, progress bar, the exercise card, set table, + Add Set, Previous / Next, and a
+  **floating rest-timer pill**. Gestures: tap the DONE box, **swipe the card left/right** to
+  change exercise. Uses `DeviceDisplay.KeepScreenOn` so the phone doesn't sleep mid-workout.
+  Cancel asks before discarding; Finish warns about unticked sets.
+- **`ViewModels/QuickSwapViewModel.cs` + `Views/QuickSwapPage`** — screen 4.3: "Target: Chest
+  (Same Mechanics)" tag, substitutes from the swap engine with **your PR** and a **Free in Gym**
+  tag (best option pre-selected), a **scope switch** (off = this session only, on = update the
+  routine permanently), and **Confirm Exercise Swap**.
+- **`Views/FormGuidePage`** — screen 4.4: a **looping tempo animation** (lime bar moves down
+  2s, pauses, up 1s, counting reps — MAUI `TranslateToAsync` animation), the exercise's
+  **key form cues** as a checklist, **equipment-specific safety checks**, and your setup note.
+- **`Models/WorkoutSummary.cs` + `Views/WorkoutSummaryPage`** — screen 4.5: total volume,
+  duration, sets, exercises, a **Training Day** card showing how the targets changed
+  (e.g. Calories 2,082 → 2,450 kcal, Carbs 196 → 280 g), and each exercise with a **NEW PR**
+  badge when you beat your record.
+- **`Data/LiftLifeRepository.cs`** — added `GetPreviousSetsAsync`, `GetPersonalRecordAsync`,
+  `UpdateRoutineExerciseAsync` (permanent swap) and `ActivateTrainingDayAsync`.
+- **`Models/Nutrition.cs`** — `UserSettings` now remembers `LastTrainingDate`, so the app knows
+  today is a training day.
+- **`Data/LiftLifeDatabase.cs`** — seeds two past Push Day A sessions with real sets, so PREV
+  values and PRs show on first launch.
+- **`Resources/Styles/LiftLifeStyles.xaml`** — the `FieldBox` input style moved here so all
+  screens share it.
+
+### Likely questions & my answers
+- **Q: How does the rest timer work?** A single 1-second `IDispatcherTimer`. Each tick updates
+  the clock; if resting, it counts down. At zero it calls `Vibration.Default.Vibrate` and
+  `HapticFeedback`, shows "Rest over", then hides the pill after 3 seconds.
+- **Q: Where does PREV come from?** The `set_logs` table: the sets from the most recent session
+  that included this exercise.
+- **Q: How is a PR detected?** Before saving, the best set (heaviest, then most reps) is compared
+  with the best set ever logged for that exercise. Higher weight, or same weight with more reps,
+  is a new PR.
+- **Q: What does "update routine permanently" do?** It changes the `ExerciseId` in that
+  routine's `routine_exercises` row, so next time the routine starts with the substitute.
+- **Q: How do workouts affect nutrition?** Finishing saves today's date as `LastTrainingDate`
+  and sets the day to Training, which raises calories and carbs back to the full targets.
+  The Nutrition tab (Day 6) reads these.
+- **Q: What if I cancel?** Nothing is saved — the session is only written to the database on Finish.
+
+---
+
 ## Still to come
-- **Day 5** — Active Workout Session (set logging, rest timer, haptics), Quick Swap sheet,
-  form guide, workout summary
 - **Day 6** — Daily Nutrition Hub, food search/log, custom foods, training vs rest day macros
 - **Day 7** — About page, final polish, testing, report

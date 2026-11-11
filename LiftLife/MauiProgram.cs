@@ -27,6 +27,8 @@ public static class MauiProgram
 		builder.Services.AddTransient<CommunityViewModel>();
 		builder.Services.AddTransient<WorkoutsViewModel>();
 		builder.Services.AddTransient<RoutineBuilderViewModel>();
+		builder.Services.AddTransient<ActiveWorkoutViewModel>();
+		builder.Services.AddTransient<QuickSwapViewModel>();
 
 		// Pages
 		builder.Services.AddTransient<CommunityPage>();
