@@ -637,7 +637,8 @@ phone these MAUI device APIs actually work, which is better for the demo.
   also updates older databases.
 
 ### 5 & 6. UNITEN Gymnasium
-- The density card uses a photo of the **UNITEN Gymnasium** (`photo_uniten_gym.jpg`), with a
+- The density card uses a photo of the **UNITEN Gymnasium** (`photo_uniten_gym.jpg`, © UNITEN,
+  credited on the About page and in `docs/MEDIA_CREDITS.md`), with a
   stronger dark fade because the photo is bright. The location label now says
   **📍 UNITEN Gymnasium**.
 
