@@ -569,3 +569,36 @@ the SQLite file after **Reset Demo Data**: 7 stations, 15 station reports, 14 me
   the muscle group up in a dictionary and returns the file name, which is set as the `Image` source.
 - **Q: How is the text kept readable on top of a photo?** A `ContentView` with a
   `LinearGradientBrush` from transparent to almost black sits between the image and the text.
+
+---
+
+## Running on my iPhone 14 Pro
+
+**Why:** the simulator can't show haptics, the rest-timer vibration or keep-screen-on. On a real
+phone these MAUI device APIs actually work, which is better for the demo.
+
+### How it works
+- **Signing:** Apple only runs signed apps on real devices. A free Apple ID in Xcode created an
+  "Apple Development" certificate and a provisioning profile for `com.hilmanashraf.liftlife` that
+  includes my iPhone. A .NET MAUI app isn't an Xcode project, but the .NET build uses the same
+  certificate and profile.
+- **`run-iphone.sh`** (repo root) does it in one command:
+  1. finds the connected iPhone with `xcrun devicectl list devices`
+  2. builds for the device: `dotnet build -f net10.0-ios -p:RuntimeIdentifier=ios-arm64 -p:CodesignKey="Apple Development"`
+  3. installs with `xcrun devicectl device install app`
+  4. opens it with `xcrun devicectl device process launch`
+- The signing settings are passed on the command line rather than saved in `LiftLife.csproj`,
+  because the certificate name contains my email address and the repo is public.
+
+### Things to remember
+- **The free profile expires after 7 days** (current one: 24 Nov 2026). The day before the
+  presentation: open the Xcode test project, pick the iPhone, press Run once, then `./run-iphone.sh`.
+- The phone has its **own SQLite database**, separate from the simulator.
+- Developer Mode must stay on (Settings → Privacy & Security → Developer Mode).
+
+### Likely questions & my answers
+- **Q: How did you get it onto your phone without the App Store?** Development signing with a
+  free Apple ID: Xcode made a certificate and a 7-day profile tied to my phone's ID, and the .NET
+  build signs the app with them.
+- **Q: Why does it stop working after a week?** Free Apple ID profiles are only valid for 7 days;
+  a paid developer account gives one year.

@@ -66,6 +66,17 @@ xcrun simctl install booted bin/Debug/net10.0-ios/iossimulator-arm64/LiftLife.ap
 xcrun simctl launch booted com.hilmanashraf.liftlife
 ```
 
+## Run on a real iPhone
+One-time setup: sign in to Xcode with an Apple ID (Settings → Accounts), let Xcode create a
+signing profile for `com.hilmanashraf.liftlife` (run any Xcode app with that bundle ID on the
+phone once), and turn on **Developer Mode** on the iPhone. Then, with the phone plugged in and
+unlocked:
+```bash
+./run-iphone.sh
+```
+Free Apple ID profiles expire after 7 days. If signing fails, open the Xcode test project,
+select the iPhone and press Run once to renew the profile, then run the script again.
+
 To start again with the sample data, use **About → Reset Demo Data**, or uninstall first:
 `xcrun simctl uninstall booted com.hilmanashraf.liftlife`.
 
