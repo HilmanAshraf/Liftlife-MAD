@@ -1,3 +1,4 @@
+using LiftLife.Services;
 using LiftLife.ViewModels;
 
 namespace LiftLife.Views;
@@ -23,7 +24,8 @@ public partial class FormGuidePage : ContentPage
         InitializeComponent();
 
         TitleLabel.Text = exercise.Name;
-        TagLabel.Text = exercise.TagLine;
+        TagLabel.Text = exercise.TagLine.ToUpperInvariant();
+        MusclePhoto.Source = MuscleImages.For(exercise.MuscleGroup);
 
         // Turn the stored cue sentence into bullet points.
         var cues = exercise.FormCue

@@ -540,3 +540,32 @@ the SQLite file after **Reset Demo Data**: 7 stations, 15 station reports, 14 me
 - Real looping exercise videos in the Form Guide
 - Charts of volume and nutrition over time
 - **Day 7** — About page, final polish, testing, report
+
+---
+
+## Polish — Gym photos (rubric: "suitable images added")
+
+**Goal:** Add real, relevant images to improve Design Attractiveness and the brief's
+"readable content and images" requirement, without cluttering the screens.
+
+### What was added
+- **7 free Pexels photos** in `Resources/Images/` (`photo_*.jpg`), cropped to 16:9 around the
+  person and compressed (about 50–200 KB each). Sources are listed in `docs/MEDIA_CREDITS.md`.
+- **Community tab** — the gym density card now has a gym-floor photo behind it, with a dark
+  gradient on top (`LinearGradientBrush`) so the text stays readable.
+- **Form Guide** — a photo for the exercise's muscle group at the top (chest, back, legs,
+  shoulders, biceps, triceps), with the muscle and equipment label over it.
+- **`Services/MuscleImages.cs`** — maps a muscle group to its photo file; falls back to the gym
+  banner if a group has no photo.
+- **`LiftLife.csproj`** — `Resize="false"` for the photos, so MAUI copies them as they are
+  instead of re-processing them.
+- **About page** — credit line for Pexels.
+
+### Likely questions & my answers
+- **Q: Where do the images come from, and can you use them?** Pexels, under the Pexels Licence,
+  which allows free use in apps without permission. The exact photos are listed in
+  `docs/MEDIA_CREDITS.md`, and the About page credits Pexels.
+- **Q: How does the Form Guide pick the photo?** `MuscleImages.For(exercise.MuscleGroup)` looks
+  the muscle group up in a dictionary and returns the file name, which is set as the `Image` source.
+- **Q: How is the text kept readable on top of a photo?** A `ContentView` with a
+  `LinearGradientBrush` from transparent to almost black sits between the image and the text.

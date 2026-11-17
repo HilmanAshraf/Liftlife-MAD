@@ -110,6 +110,10 @@
                 <Button Text="Reset Demo Data" Style="{StaticResource OutlineButton}"
                         TextColor="{StaticResource StatusBusy}" Clicked="OnResetClicked" />
 
+                <Label Text="Gym photos from Pexels (pexels.com), used under the free Pexels Licence"
+                       Style="{StaticResource MutedCaption}" HorizontalOptions="Center"
+                       HorizontalTextAlignment="Center" Margin="0,4,0,0" />
+
                 <Label Text="© 2026 Mohamed Hilman Ashraf • Built with .NET MAUI"
                        Style="{StaticResource MutedCaption}" HorizontalOptions="Center" Margin="0,4,0,0" />
             </VerticalStackLayout>

@@ -25,7 +25,25 @@
         <ScrollView Grid.Row="1">
             <VerticalStackLayout Spacing="14" Padding="0,0,0,40">
 
-                <Label x:Name="TagLabel" Style="{StaticResource SubtleText}" HorizontalOptions="Center" />
+                <!-- Muscle-group photo (one per muscle group, chosen in code-behind) -->
+                <Border StrokeThickness="0" HeightRequest="190" BackgroundColor="{StaticResource SurfaceCard}">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="16" />
+                    </Border.StrokeShape>
+                    <Grid>
+                        <Image x:Name="MusclePhoto" Aspect="AspectFill" />
+                        <ContentView>
+                            <ContentView.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="#000B0B0F" Offset="0.45" />
+                                    <GradientStop Color="#E60B0B0F" Offset="1" />
+                                </LinearGradientBrush>
+                            </ContentView.Background>
+                        </ContentView>
+                        <Label x:Name="TagLabel" Margin="14,0,14,12" VerticalOptions="End"
+                               FontAttributes="Bold" FontSize="14" TextColor="{StaticResource Primary}" />
+                    </Grid>
+                </Border>
 
                 <!-- Looping tempo guide (animated with the MAUI animation API) -->
                 <Border Style="{StaticResource CardElevated}">

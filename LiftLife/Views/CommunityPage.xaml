@@ -23,15 +23,28 @@
             <Label Grid.Column="1" Text="📍 Campus Gym" Style="{StaticResource SubtleText}" VerticalOptions="Center" />
         </Grid>
 
-        <!-- Crowd density banner -->
-        <Border Grid.Row="1" Style="{StaticResource CardElevated}">
-            <VerticalStackLayout Spacing="6">
-                <Label Text="{Binding DensityTitle}" Style="{StaticResource CardTitle}" FontSize="15" />
-                <Label Text="{Binding DensitySubtitle}" Style="{StaticResource SubtleText}" />
-                <ProgressBar Progress="{Binding DensityProgress}"
-                             ProgressColor="{StaticResource Primary}"
-                             Margin="0,6,0,0" />
-            </VerticalStackLayout>
+        <!-- Crowd density banner: gym photo + dark gradient so the text stays readable -->
+        <Border Grid.Row="1" Style="{StaticResource CardElevated}" Padding="0" HeightRequest="150">
+            <Grid>
+                <Image Source="photo_banner.jpg" Aspect="AspectFill"
+                       SemanticProperties.Description="Community gym floor" />
+                <ContentView>
+                    <ContentView.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                            <GradientStop Color="#550B0B0F" Offset="0" />
+                            <GradientStop Color="#EE0B0B0F" Offset="0.75" />
+                        </LinearGradientBrush>
+                    </ContentView.Background>
+                </ContentView>
+                <VerticalStackLayout Spacing="6" Padding="16" VerticalOptions="End">
+                    <Label Text="{Binding DensityTitle}" Style="{StaticResource CardTitle}" FontSize="15" />
+                    <Label Text="{Binding DensitySubtitle}" Style="{StaticResource SubtleText}"
+                           TextColor="{StaticResource TextPrimary}" />
+                    <ProgressBar Progress="{Binding DensityProgress}"
+                                 ProgressColor="{StaticResource Primary}"
+                                 Margin="0,6,0,0" />
+                </VerticalStackLayout>
+            </Grid>
         </Border>
 
         <!-- Category filter chips (tap gesture) -->
