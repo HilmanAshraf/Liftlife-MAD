@@ -20,19 +20,21 @@
         <!-- Top app bar: app title + facility geotag -->
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
             <Label Text="LiftLife" Style="{StaticResource ScreenTitle}" VerticalOptions="Center" />
-            <Label Grid.Column="1" Text="📍 Campus Gym" Style="{StaticResource SubtleText}" VerticalOptions="Center" />
+            <Label Grid.Column="1" Text="📍 UNITEN Gymnasium" Style="{StaticResource SubtleText}" VerticalOptions="Center" />
         </Grid>
 
         <!-- Crowd density banner: gym photo + dark gradient so the text stays readable -->
         <Border Grid.Row="1" Style="{StaticResource CardElevated}" Padding="0" HeightRequest="150">
             <Grid>
-                <Image Source="photo_banner.jpg" Aspect="AspectFill"
-                       SemanticProperties.Description="Community gym floor" />
+                <Image Source="photo_uniten_gym.jpg" Aspect="AspectFill"
+                       SemanticProperties.Description="UNITEN Gymnasium floor" />
+                <!-- The photo is bright, so the fade is strong enough to keep white text readable -->
                 <ContentView>
                     <ContentView.Background>
                         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                            <GradientStop Color="#550B0B0F" Offset="0" />
-                            <GradientStop Color="#EE0B0B0F" Offset="0.75" />
+                            <GradientStop Color="#330B0B0F" Offset="0" />
+                            <GradientStop Color="#C80B0B0F" Offset="0.45" />
+                            <GradientStop Color="#F50B0B0F" Offset="0.85" />
                         </LinearGradientBrush>
                     </ContentView.Background>
                 </ContentView>
@@ -113,6 +115,10 @@
                                     <VerticalStackLayout Spacing="3">
                                         <Label Text="{Binding Name}" Style="{StaticResource CardTitle}" />
                                         <Label Text="{Binding DetailLine}" Style="{StaticResource SubtleText}" />
+                                        <!-- Queue info, e.g. "👥 2 waiting • about 24 min if you join" -->
+                                        <Label Text="{Binding QueueText}" IsVisible="{Binding HasQueueText}"
+                                               FontSize="13" FontAttributes="Bold"
+                                               TextColor="{StaticResource StatusWarning}" />
                                     </VerticalStackLayout>
 
                                     <!-- Status badge -->
@@ -140,6 +146,13 @@
                                             Style="{StaticResource OutlineButton}"
                                             Clicked="OnUpdateStatusClicked" />
                                 </Grid>
+
+                                <!-- Queue for a station someone else is using -->
+                                <Button Text="{Binding QueueButtonText}"
+                                        IsVisible="{Binding CanQueue}"
+                                        Style="{StaticResource DarkButton}"
+                                        HeightRequest="42"
+                                        Clicked="OnQueueClicked" />
                             </VerticalStackLayout>
                         </Border>
                     </DataTemplate>

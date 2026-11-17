@@ -87,9 +87,21 @@ public class CommunityViewModel : BaseViewModel
             Stations.Add(s);
 
         var (percent, label, busy, usable) = await _repo.GetCrowdDensityAsync();
+        var waiting = await _repo.GetWaitingCountAsync();
         DensityTitle = $"GYM DENSITY: {label} ({percent}%)";
-        DensitySubtitle = $"{busy} of {usable} working stations in use right now";
+        DensitySubtitle = $"{busy} of {usable} working stations in use" +
+                          (waiting > 0 ? $" • {waiting} member{(waiting == 1 ? "" : "s")} in queues" : " right now");
         DensityProgress = percent / 100.0;
+    }
+
+    /// <summary>Joins or leaves the queue for a busy station.</summary>
+    public async Task ToggleQueueAsync(Station station, string memberName)
+    {
+        if (station.IsInMyQueue)
+            await _repo.LeaveQueueAsync(station.Id);
+        else
+            await _repo.JoinQueueAsync(station.Id, memberName);
+        await LoadAsync();
     }
 
     public async Task SelectCategoryAsync(CategoryChip chip)

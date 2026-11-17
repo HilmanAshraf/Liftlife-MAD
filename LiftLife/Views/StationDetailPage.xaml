@@ -42,6 +42,36 @@
                 </VerticalStackLayout>
             </Border>
 
+            <!-- Queue: who is waiting for this station -->
+            <Label Text="{Binding QueueHeader}" Style="{StaticResource MutedCaption}" Margin="4,6,0,0" />
+            <Border Style="{StaticResource Card}" Padding="14,12" IsVisible="{Binding HasQueue}">
+                <VerticalStackLayout Spacing="10" BindableLayout.ItemsSource="{Binding Queue}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="models:StationQueueEntry">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                <Border BackgroundColor="{StaticResource StatusWarning}" StrokeThickness="0"
+                                        WidthRequest="28" HeightRequest="28" VerticalOptions="Center">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="14" />
+                                    </Border.StrokeShape>
+                                    <Label Text="{Binding Position}" FontAttributes="Bold" FontSize="13"
+                                           TextColor="{StaticResource PrimaryDarkText}"
+                                           HorizontalOptions="Center" VerticalOptions="Center" />
+                                </Border>
+                                <Label Grid.Column="1" Text="{Binding DisplayName}" Style="{StaticResource BodyText}"
+                                       FontAttributes="Bold" VerticalOptions="Center" />
+                                <Label Grid.Column="2" Text="{Binding JoinedText}" Style="{StaticResource SubtleText}"
+                                       FontSize="12" VerticalOptions="Center" />
+                            </Grid>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+            </Border>
+            <Button Text="{Binding Station.QueueButtonText}"
+                    IsVisible="{Binding Station.CanQueue}"
+                    Style="{StaticResource DarkButton}" HeightRequest="44"
+                    Clicked="OnQueueClicked" />
+
             <Label Text="MAINTENANCE LOG" Style="{StaticResource MutedCaption}" Margin="4,6,0,0" />
 
             <!-- Report history, newest first -->

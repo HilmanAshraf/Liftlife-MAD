@@ -18,6 +18,25 @@ public class StationDetailViewModel : BaseViewModel
 
     public ObservableCollection<StationReport> Reports { get; } = new();
 
+    /// <summary>Members waiting for this station, in order.</summary>
+    public ObservableCollection<StationQueueEntry> Queue { get; } = new();
+
+    public bool HasQueue => Queue.Count > 0;
+
+    public string QueueHeader => Queue.Count == 0
+        ? "QUEUE • nobody waiting"
+        : $"QUEUE • {Queue.Count} waiting • about {Queue.Count * Station.MinutesPerMember} min total";
+
+    public async Task ToggleQueueAsync(string memberName)
+    {
+        if (Station is null) return;
+        if (Station.IsInMyQueue)
+            await _repo.LeaveQueueAsync(Station.Id);
+        else
+            await _repo.JoinQueueAsync(Station.Id, memberName);
+        await LoadAsync(Station.Id);
+    }
+
     public Station? Station
     {
         get => _station;
@@ -50,5 +69,11 @@ public class StationDetailViewModel : BaseViewModel
         var faults = recent.Count(r => r.Status == StationStatus.OutOfOrder);
         SummaryText = $"{recent.Count} report{(recent.Count == 1 ? "" : "s")} in the last 30 days • " +
                       $"{faults} fault report{(faults == 1 ? "" : "s")}";
+
+        Queue.Clear();
+        foreach (var entry in await _repo.GetQueueAsync(stationId))
+            Queue.Add(entry);
+        OnPropertyChanged(nameof(HasQueue));
+        OnPropertyChanged(nameof(QueueHeader));
     }
 }

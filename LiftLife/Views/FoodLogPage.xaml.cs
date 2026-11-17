@@ -29,7 +29,7 @@ public partial class FoodLogPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        if (_loaded) return; // don't reset when coming back from the custom food sheet
+        if (_loaded) return; // load once, so typed text isn't reset
         _loaded = true;
         await _vm.InitAsync(_meal, _date);
     }
@@ -40,8 +40,10 @@ public partial class FoodLogPage : ContentPage
             _vm.SelectMeal(chip);
     }
 
-    private async void OnCreateCustomClicked(object? sender, EventArgs e) =>
-        await Navigation.PushModalAsync(new CustomFoodPage(_vm.SearchText, _vm.SelectNewFoodAsync));
+    private void OnSearchTabTapped(object? sender, EventArgs e) => _vm.IsQuickAdd = false;
+
+    // Used by the tab, the "Quick Add it" button and the list footer.
+    private void OnQuickAddTabTapped(object? sender, EventArgs e) => _vm.StartQuickAdd();
 
     private async void OnLogClicked(object? sender, EventArgs e)
     {

@@ -8,28 +8,17 @@
              Shell.TabBarIsVisible="False"
              BackgroundColor="{StaticResource AppBackground}">
 
-    <Grid RowDefinitions="Auto,Auto,*">
+    <Grid RowDefinitions="Auto,Auto,Auto,*">
 
-        <!-- Session action bar: Cancel | routine + clock | Finish -->
+        <!-- Session action bar: Cancel | routine name | Finish -->
         <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Padding="16,8,16,4">
             <Button Text="Cancel"
                     BackgroundColor="Transparent"
                     TextColor="{StaticResource TextSecondary}"
                     FontSize="15" Padding="4,0"
                     Clicked="OnCancelClicked" />
-            <VerticalStackLayout Grid.Column="1" HorizontalOptions="Center" VerticalOptions="Center" Spacing="2">
-                <Label Text="{Binding RoutineName}" Style="{StaticResource CardTitle}" HorizontalOptions="Center" />
-                <Label Style="{StaticResource SubtleText}" HorizontalOptions="Center" FontSize="12">
-                    <Label.FormattedText>
-                        <FormattedString>
-                            <Span Text="⏱ " />
-                            <Span Text="{Binding ElapsedText}" />
-                            <Span Text="   •   " />
-                            <Span Text="{Binding VolumeText}" />
-                        </FormattedString>
-                    </Label.FormattedText>
-                </Label>
-            </VerticalStackLayout>
+            <Label Grid.Column="1" Text="{Binding RoutineName}" Style="{StaticResource CardTitle}" FontSize="18"
+                   HorizontalOptions="Center" VerticalOptions="Center" />
             <Button Grid.Column="2"
                     Text="Finish"
                     Style="{StaticResource PrimaryButton}"
@@ -37,13 +26,31 @@
                     Clicked="OnFinishClicked" />
         </Grid>
 
+        <!-- Big, easy-to-read session stats -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="12" Padding="20,8,20,4">
+            <Border Style="{StaticResource CardElevated}" Padding="14,10">
+                <VerticalStackLayout Spacing="2">
+                    <Label Text="⏱ WORKOUT TIME" Style="{StaticResource MutedCaption}" />
+                    <Label Text="{Binding ElapsedText}" FontSize="32" FontAttributes="Bold"
+                           TextColor="{StaticResource Primary}" />
+                </VerticalStackLayout>
+            </Border>
+            <Border Grid.Column="1" Style="{StaticResource CardElevated}" Padding="14,10">
+                <VerticalStackLayout Spacing="2">
+                    <Label Text="🏋 TOTAL VOLUME" Style="{StaticResource MutedCaption}" />
+                    <Label Text="{Binding VolumeText}" FontSize="32" FontAttributes="Bold"
+                           TextColor="{StaticResource TextPrimary}" />
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+
         <!-- Overall progress -->
-        <VerticalStackLayout Grid.Row="1" Padding="20,8,20,4" Spacing="6">
+        <VerticalStackLayout Grid.Row="2" Padding="20,8,20,4" Spacing="6">
             <Label Text="{Binding ProgressText}" Style="{StaticResource MutedCaption}" />
             <ProgressBar Progress="{Binding ProgressValue}" ProgressColor="{StaticResource Primary}" />
         </VerticalStackLayout>
 
-        <ScrollView Grid.Row="2">
+        <ScrollView Grid.Row="3">
             <VerticalStackLayout Padding="20,10,20,150" Spacing="14">
 
                 <!-- Exercise block (swipe left/right to change exercise) -->
@@ -78,6 +85,14 @@
                                     HeightRequest="38" Padding="14,0"
                                     Clicked="OnSwapClicked" />
                         </Grid>
+
+                        <!-- This exercise's rest time: tap to change (saved to the routine) -->
+                        <Button Text="{Binding CurrentExercise.RestButtonText}"
+                                Style="{StaticResource OutlineButton}"
+                                HeightRequest="38" Padding="14,0"
+                                HorizontalOptions="Start"
+                                Clicked="OnRestTimeClicked"
+                                SemanticProperties.Description="Change rest time for this exercise" />
 
                         <!-- Set logging table -->
                         <Grid ColumnDefinitions="34,*,78,62,46" ColumnSpacing="8">
@@ -171,10 +186,11 @@
         </ScrollView>
 
         <!-- Floating rest timer pill -->
-        <Border Grid.Row="2"
+        <!-- Floating rest timer bar: −15s / +15s / Skip. Turns green when rest is over. -->
+        <Border Grid.Row="3"
                 IsVisible="{Binding IsResting}"
-                VerticalOptions="End" HorizontalOptions="Center"
-                Margin="0,0,0,34" Padding="20,10,10,10"
+                VerticalOptions="End"
+                Margin="16,0,16,30" Padding="18,10,10,10"
                 BackgroundColor="{StaticResource SurfaceElevated}"
                 Stroke="{StaticResource Primary}" StrokeThickness="1.5">
             <Border.StrokeShape>
@@ -183,14 +199,30 @@
             <Border.Shadow>
                 <Shadow Brush="Black" Opacity="0.6" Radius="20" Offset="0,6" />
             </Border.Shadow>
-            <HorizontalStackLayout Spacing="10">
+            <Border.Triggers>
+                <DataTrigger TargetType="Border" Binding="{Binding IsRestOver}" Value="True">
+                    <Setter Property="Stroke" Value="{StaticResource StatusFree}" />
+                </DataTrigger>
+            </Border.Triggers>
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
                 <Label Text="{Binding RestText}" TextColor="{StaticResource Primary}"
-                       FontSize="17" FontAttributes="Bold" VerticalOptions="Center" />
-                <Button Text="+15s" Style="{StaticResource DarkButton}" HeightRequest="36" Padding="12,0"
-                        BackgroundColor="{StaticResource Tertiary}" Clicked="OnAddRestClicked" />
-                <Button Text="Skip" Style="{StaticResource DarkButton}" HeightRequest="36" Padding="12,0"
+                       FontSize="20" FontAttributes="Bold" VerticalOptions="Center" LineBreakMode="TailTruncation">
+                    <Label.Triggers>
+                        <DataTrigger TargetType="Label" Binding="{Binding IsRestOver}" Value="True">
+                            <Setter Property="TextColor" Value="{StaticResource StatusFree}" />
+                            <Setter Property="FontSize" Value="16" />
+                        </DataTrigger>
+                    </Label.Triggers>
+                </Label>
+                <Button Grid.Column="1" Text="−15s" Style="{StaticResource DarkButton}" HeightRequest="38" Padding="10,0"
+                        BackgroundColor="{StaticResource Tertiary}" Clicked="OnReduceRestClicked"
+                        SemanticProperties.Description="Remove 15 seconds of rest" />
+                <Button Grid.Column="2" Text="+15s" Style="{StaticResource DarkButton}" HeightRequest="38" Padding="10,0"
+                        BackgroundColor="{StaticResource Tertiary}" Clicked="OnAddRestClicked"
+                        SemanticProperties.Description="Add 15 seconds of rest" />
+                <Button Grid.Column="3" Text="Skip" Style="{StaticResource DarkButton}" HeightRequest="38" Padding="12,0"
                         BackgroundColor="{StaticResource Tertiary}" Clicked="OnSkipRestClicked" />
-            </HorizontalStackLayout>
+            </Grid>
         </Border>
     </Grid>
 </ContentPage>

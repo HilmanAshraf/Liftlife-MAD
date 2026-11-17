@@ -6,7 +6,7 @@ payment or permission needed. They were cropped to 16:9 and compressed for the a
 
 | File (`LiftLife/Resources/Images/`) | Used on | Source |
 |---|---|---|
-| `photo_banner.jpg` | Community tab, gym density card | https://www.pexels.com/photo/9958669/ |
+| `photo_uniten_gym.jpg` | Community tab, gym density card | UNITEN Gymnasium photo provided by the developer (not from Pexels) |
 | `photo_chest.jpg` | Form Guide, chest exercises | https://www.pexels.com/photo/11432959/ |
 | `photo_back.jpg` | Form Guide, back exercises | https://www.pexels.com/photo/18060085/ |
 | `photo_legs.jpg` | Form Guide, leg exercises | https://www.pexels.com/photo/20240040/ |

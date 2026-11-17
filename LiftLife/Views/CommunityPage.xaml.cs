@@ -55,8 +55,13 @@ public partial class CommunityPage : ContentPage
             var name = await MemberNamePrompt.EnsureAsync(this, _repo);
             if (name is null) return;
 
-            var confirm = await DisplayAlertAsync("Claim Station",
-                $"Mark {station.Name} as in use by you?", "Claim", "Cancel");
+            // Queue etiquette: if someone else is next, check before jumping ahead of them.
+            var someoneElseNext = station.QueueCount > 0 && station.MyQueuePosition != 1;
+            var message = someoneElseNext
+                ? $"{station.NextInQueue} is next in the queue for {station.Name}. Claim it anyway?"
+                : $"Mark {station.Name} as in use by you?";
+
+            var confirm = await DisplayAlertAsync("Claim Station", message, "Claim", "Cancel");
             if (!confirm) return;
 
             await _vm.ClaimAsync(station, name);
@@ -103,6 +108,35 @@ public partial class CommunityPage : ContentPage
         Vibrate();
         await DisplayAlertAsync("Swap Suggested",
             $"Do {picked.Exercise.Name} instead.\n\nForm cue: {picked.Exercise.FormCue}", "Got it");
+    }
+
+    /// <summary>Join or leave the queue for a busy station.</summary>
+    private async void OnQueueClicked(object? sender, EventArgs e)
+    {
+        if ((sender as BindableObject)?.BindingContext is not Station station)
+            return;
+
+        if (station.IsInMyQueue)
+        {
+            var leave = await DisplayAlertAsync("Leave Queue",
+                $"Leave the queue for {station.Name}? You'll lose your place.", "Leave", "Stay");
+            if (!leave) return;
+        }
+
+        var name = await MemberNamePrompt.EnsureAsync(this, _repo);
+        if (name is null) return;
+
+        var joining = !station.IsInMyQueue;
+        await _vm.ToggleQueueAsync(station, name);
+        Vibrate();
+
+        if (joining)
+        {
+            var position = station.QueueCount + 1;
+            await DisplayAlertAsync("You're in the Queue",
+                $"You're #{position} for {station.Name}, about {position * Station.MinutesPerMember} min. " +
+                "Claim it when it shows as free.", "OK");
+        }
     }
 
     private async void OnUpdateStatusClicked(object? sender, EventArgs e)

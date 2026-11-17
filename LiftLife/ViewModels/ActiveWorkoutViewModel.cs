@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using LiftLife.Data;
 using LiftLife.Models;
+using LiftLife.Services;
 
 namespace LiftLife.ViewModels;
 
@@ -63,11 +64,26 @@ public class SessionExercise : BaseViewModel
     private string _equipment = string.Empty;
     private string _swappedFrom = string.Empty;
 
+    private int _restSeconds = 90;
+
     public int RoutineExerciseId { get; init; }
     public string MuscleGroup { get; init; } = string.Empty;
     public string FormCue { get; set; } = string.Empty;
     public string SetupNote { get; init; } = string.Empty;
-    public int RestSeconds { get; set; } = 90;
+
+    /// <summary>Rest after each set of this exercise. The member can change it during the session.</summary>
+    public int RestSeconds
+    {
+        get => _restSeconds;
+        set
+        {
+            if (SetProperty(ref _restSeconds, value))
+                OnPropertyChanged(nameof(RestButtonText));
+        }
+    }
+
+    /// <summary>Label on the rest button, e.g. "⏱ Rest 1:30".</summary>
+    public string RestButtonText => $"⏱ Rest {RestSeconds / 60}:{RestSeconds % 60:00}";
     public int TargetReps { get; init; } = 10;
 
     /// <summary>Last session's sets for this exercise (for PREV and pre-filling).</summary>
@@ -293,9 +309,8 @@ public class ActiveWorkoutViewModel : BaseViewModel
             _restRemaining--;
             if (_restRemaining == 0)
             {
-                // Rest finished: vibrate + haptic so the user knows without looking.
-                try { Vibration.Default.Vibrate(TimeSpan.FromMilliseconds(500)); } catch { }
-                try { HapticFeedback.Default.Perform(HapticFeedbackType.LongPress); } catch { }
+                // Rest finished: strong buzz pattern so the user notices without looking.
+                RestAlert.Play();
                 _restDoneHold = RestDoneHoldSeconds;
             }
         }
@@ -304,27 +319,87 @@ public class ActiveWorkoutViewModel : BaseViewModel
             IsResting = false;
         }
 
-        OnPropertyChanged(nameof(RestText));
+        RefreshRest();
     }
 
     private void StartRest(int seconds)
     {
         _restRemaining = Math.Max(5, seconds);
         IsResting = true;
-        OnPropertyChanged(nameof(RestText));
+        RefreshRest();
     }
 
-    public void AddRestTime(int seconds)
+    /// <summary>Adds (positive) or removes (negative) rest time. Going to zero ends the rest.</summary>
+    public void AdjustRestTime(int seconds)
     {
         if (!IsResting) return;
-        _restRemaining += seconds;
-        OnPropertyChanged(nameof(RestText));
+
+        var updated = _restRemaining + seconds;
+        if (updated <= 0)
+        {
+            SkipRest();
+            return;
+        }
+
+        _restRemaining = Math.Min(updated, MaxRestSeconds);
+        RefreshRest();
     }
 
     public void SkipRest()
     {
         _restRemaining = 0;
         IsResting = false;
+        RefreshRest();
+    }
+
+    /// <summary>True for the few seconds after the countdown hits zero (pill turns green).</summary>
+    public bool IsRestOver => IsResting && _restRemaining == 0;
+
+    private void RefreshRest()
+    {
+        OnPropertyChanged(nameof(RestText));
+        OnPropertyChanged(nameof(IsRestOver));
+    }
+
+    // ---------------- Custom rest time per exercise ----------------
+
+    public const int MinRestSeconds = 10;
+    public const int MaxRestSeconds = 600;
+
+    /// <summary>
+    /// Sets the rest time for the current exercise and saves it to the routine,
+    /// so the next session uses the member's own rest time.
+    /// </summary>
+    /// <returns>An error message, or null if saved.</returns>
+    public async Task<string?> SetRestForCurrentAsync(int seconds)
+    {
+        if (CurrentExercise is null) return null;
+        if (seconds is < MinRestSeconds or > MaxRestSeconds)
+            return $"Rest must be between {MinRestSeconds} seconds and {MaxRestSeconds / 60} minutes.";
+
+        CurrentExercise.RestSeconds = seconds;
+        if (CurrentExercise.RoutineExerciseId > 0)
+            await _repo.UpdateRoutineExerciseRestAsync(CurrentExercise.RoutineExerciseId, seconds);
+        return null;
+    }
+
+    /// <summary>Reads "90", "90s", "1:30" or "2m" as seconds. Null if it can't be read.</summary>
+    public static int? ParseRestInput(string? text)
+    {
+        var value = text?.Trim().ToLowerInvariant().Replace(" ", "");
+        if (string.IsNullOrEmpty(value)) return null;
+
+        if (value.Contains(':'))
+        {
+            var parts = value.Split(':');
+            return parts.Length == 2 && int.TryParse(parts[0], out var m) && int.TryParse(parts[1], out var s) && s is >= 0 and < 60
+                ? m * 60 + s
+                : null;
+        }
+
+        if (value.EndsWith("m") && int.TryParse(value[..^1], out var minutes)) return minutes * 60;
+        if (value.EndsWith("s")) value = value[..^1];
+        return int.TryParse(value, out var seconds) ? seconds : null;
     }
 
     // ---------------- Sets ----------------

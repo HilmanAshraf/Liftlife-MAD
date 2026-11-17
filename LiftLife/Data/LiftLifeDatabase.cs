@@ -45,6 +45,7 @@ public class LiftLifeDatabase
             // CreateTableAsync also adds any new columns to existing tables.
             await conn.CreateTableAsync<Station>();
             await conn.CreateTableAsync<StationReport>();
+        await conn.CreateTableAsync<StationQueueEntry>();
             await conn.CreateTableAsync<Exercise>();
             await conn.CreateTableAsync<Routine>();
             await conn.CreateTableAsync<RoutineExercise>();
@@ -97,7 +98,9 @@ public class LiftLifeDatabase
         await SeedExercisesAsync(db);
         await SeedStationsAsync(db);
         await SeedStationReportsAsync(db);
+        await SeedQueuesAsync(db);
         await SeedFoodsAsync(db);
+        await SeedLocalFoodsAsync(db);
         await SeedSettingsAsync(db);
         await SeedSampleRoutineAsync(db);
         await SeedWorkoutHistoryAsync(db);
@@ -163,6 +166,38 @@ public class LiftLifeDatabase
                 ReportedBy = station.ReportedBy ?? "Community",
                 ReportedAt = station.LastUpdated
             });
+        }
+    }
+
+    /// <summary>
+    /// A couple of members already waiting on busy stations, so the queue feature can be
+    /// shown on first launch. Only busy stations someone else is using get a queue.
+    /// </summary>
+    private static async Task SeedQueuesAsync(SQLiteAsyncConnection db)
+    {
+        if (await db.Table<StationQueueEntry>().CountAsync() > 0) return;
+
+        var now = DateTime.Now;
+        var plan = new Dictionary<string, (string name, double minutesAgo)[]>
+        {
+            ["Flat Barbell Bench #1"] = new[] { ("Imran", 4.0), ("Sara", 1.0) },
+            ["Lat Pulldown #1"] = new[] { ("Daniel", 3.0) },
+        };
+
+        foreach (var station in await db.Table<Station>().ToListAsync())
+        {
+            if (station.Status != StationStatus.Busy || station.ClaimedByMe) continue;
+            if (!plan.TryGetValue(station.Name, out var members)) continue;
+
+            foreach (var (name, minutesAgo) in members)
+            {
+                await db.InsertAsync(new StationQueueEntry
+                {
+                    StationId = station.Id,
+                    MemberName = name,
+                    JoinedAt = now.AddMinutes(-minutesAgo)
+                });
+            }
         }
     }
 
@@ -354,6 +389,43 @@ public class LiftLifeDatabase
         };
 
         await db.InsertAllAsync(foods);
+    }
+
+    /// <summary>
+    /// Common Malaysian campus / mamak foods (typical serving, approximate values).
+    /// Each one is only added if a food with that name isn't there yet, so this also
+    /// tops up databases created by older versions of the app.
+    /// </summary>
+    private static async Task SeedLocalFoodsAsync(SQLiteAsyncConnection db)
+    {
+        var local = new List<FoodItem>
+        {
+            new() { Name = "Nasi Goreng Kampung",      Serving = "1 plate", Calories = 600, ProteinG = 18, CarbsG = 80, FatG = 22 },
+            new() { Name = "Nasi Ayam (Chicken Rice)", Serving = "1 plate", Calories = 600, ProteinG = 30, CarbsG = 75, FatG = 18 },
+            new() { Name = "Nasi Ayam Penyet",         Serving = "1 plate", Calories = 780, ProteinG = 40, CarbsG = 80, FatG = 33 },
+            new() { Name = "Mee Goreng Mamak",         Serving = "1 plate", Calories = 660, ProteinG = 20, CarbsG = 85, FatG = 26 },
+            new() { Name = "Char Kuey Teow",           Serving = "1 plate", Calories = 740, ProteinG = 20, CarbsG = 76, FatG = 38 },
+            new() { Name = "Roti Canai",               Serving = "1 piece", Calories = 300, ProteinG = 6,  CarbsG = 40, FatG = 13 },
+            new() { Name = "Roti Telur",               Serving = "1 piece", Calories = 360, ProteinG = 11, CarbsG = 40, FatG = 17 },
+            new() { Name = "Satay Ayam",               Serving = "5 sticks", Calories = 300, ProteinG = 25, CarbsG = 10, FatG = 18 },
+            new() { Name = "Telur Mata (Fried Egg)",   Serving = "1 egg", Calories = 90, ProteinG = 6, CarbsG = 0.4, FatG = 7 },
+            new() { Name = "Teh Tarik",                Serving = "1 glass", Calories = 150, ProteinG = 4, CarbsG = 24, FatG = 4 },
+            new() { Name = "Milo Ais",                 Serving = "1 glass", Calories = 190, ProteinG = 5, CarbsG = 32, FatG = 5 },
+            new() { Name = "Brown Rice (cooked)",      Serving = "100 g", Calories = 112, ProteinG = 2.6, CarbsG = 24, FatG = 0.9 },
+            new() { Name = "Sweet Potato (boiled)",    Serving = "150 g", Calories = 130, ProteinG = 2.5, CarbsG = 30, FatG = 0.2 },
+            new() { Name = "Tofu",                     Serving = "100 g", Calories = 76, ProteinG = 8, CarbsG = 2, FatG = 4.8 },
+            new() { Name = "Full Cream Milk",          Serving = "250 ml", Calories = 155, ProteinG = 8, CarbsG = 12, FatG = 8 },
+            new() { Name = "Protein Bar",              Serving = "1 bar", Calories = 210, ProteinG = 20, CarbsG = 22, FatG = 7 },
+            new() { Name = "Apple",                    Serving = "1 medium", Calories = 95, ProteinG = 0.5, CarbsG = 25, FatG = 0.3 },
+        };
+
+        var existing = (await db.Table<FoodItem>().ToListAsync())
+            .Select(f => f.Name.Trim().ToLowerInvariant())
+            .ToHashSet();
+
+        var missing = local.Where(f => !existing.Contains(f.Name.ToLowerInvariant())).ToList();
+        if (missing.Count > 0)
+            await db.InsertAllAsync(missing);
     }
 
     private static async Task SeedSettingsAsync(SQLiteAsyncConnection db)

@@ -15,8 +15,39 @@ public class FoodLogViewModel : BaseViewModel
     private string _searchText = string.Empty;
     private FoodItem? _selectedFood;
     private double _quantity = 1;
+    private bool _isQuickAdd;
 
-    public FoodLogViewModel(LiftLifeRepository repo) => _repo = repo;
+    public FoodLogViewModel(LiftLifeRepository repo, CustomFoodViewModel quickAdd)
+    {
+        _repo = repo;
+        QuickAdd = quickAdd;
+    }
+
+    /// <summary>The Quick Add form (type in any food yourself).</summary>
+    public CustomFoodViewModel QuickAdd { get; }
+
+    /// <summary>Which tab is showing: false = Search Foods, true = Quick Add.</summary>
+    public bool IsQuickAdd
+    {
+        get => _isQuickAdd;
+        set
+        {
+            if (SetProperty(ref _isQuickAdd, value))
+                OnPropertyChanged(nameof(IsSearch));
+        }
+    }
+
+    public bool IsSearch => !IsQuickAdd;
+
+    /// <summary>Switches to Quick Add, filling the name with the current search text.</summary>
+    public void StartQuickAdd()
+    {
+        if (string.IsNullOrWhiteSpace(QuickAdd.Name))
+            QuickAdd.Prefill(SearchText);
+        IsQuickAdd = true;
+    }
+
+    public DateTime Date => _date;
 
     public ObservableCollection<FoodItem> Foods { get; } = new();
 
@@ -101,21 +132,15 @@ public class FoodLogViewModel : BaseViewModel
             SelectedFood = Foods.FirstOrDefault(f => f.Id == SelectedFood.Id) ?? SelectedFood;
     }
 
-    /// <summary>After creating a custom food: clear the search and select the new food.</summary>
-    public async Task SelectNewFoodAsync(FoodItem food)
-    {
-        _searchText = string.Empty;
-        OnPropertyChanged(nameof(SearchText));
-        await SearchAsync();
-        SelectedFood = Foods.FirstOrDefault(f => f.Id == food.Id);
-        Quantity = 1;
-    }
-
+    /// <summary>Logs from whichever tab is open.</summary>
     /// <returns>An error message, or null if logged.</returns>
     public async Task<string?> LogAsync()
     {
+        if (IsQuickAdd)
+            return await QuickAdd.LogAsync(SelectedMeal, _date);
+
         if (SelectedFood is null)
-            return "Tap a food in the list first.";
+            return "Tap a food in the list first, or use Quick Add to type in your own.";
 
         if (Quantity is < 0.5 or > 20)
             return "Choose between 0.5 and 20 servings.";

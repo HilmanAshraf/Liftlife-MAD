@@ -18,5 +18,5 @@ public static class MuscleImages
 
     /// <summary>The photo file for the muscle group, or the gym banner if there isn't one.</summary>
     public static string For(string muscleGroup) =>
-        Photos.TryGetValue(muscleGroup, out var file) ? file : "photo_banner.jpg";
+        Photos.TryGetValue(muscleGroup, out var file) ? file : "photo_uniten_gym.jpg";
 }

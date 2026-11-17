@@ -5,8 +5,9 @@ using LiftLife.Services;
 namespace LiftLife.ViewModels;
 
 /// <summary>
-/// ViewModel for the Custom Food Creator (screen 5.2): manual calorie and macro entry
-/// for foods that aren't in the catalogue (e.g. a campus cafeteria meal).
+/// Quick Add form on the Add Food sheet (screen 5.2): the member types any food, its calories
+/// and (optionally) macros, and logs it straight away. Useful for cafeteria or home-cooked meals
+/// that aren't in the food list. Can also save the food to "My Foods" for next time.
 /// </summary>
 public class CustomFoodViewModel : BaseViewModel
 {
@@ -17,11 +18,21 @@ public class CustomFoodViewModel : BaseViewModel
     private string _protein = string.Empty;
     private string _carbs = string.Empty;
     private string _fat = string.Empty;
+    private double _servings = 1;
+    private bool _saveToMyFoods = true;
 
     public CustomFoodViewModel(LiftLifeRepository repo) => _repo = repo;
 
     public string Name { get => _name; set => SetProperty(ref _name, value); }
-    public string Serving { get => _serving; set => SetProperty(ref _serving, value); }
+    public string Serving
+    {
+        get => _serving;
+        set
+        {
+            if (SetProperty(ref _serving, value))
+                OnPropertyChanged(nameof(ServingsText)); // "1.5 × 1 plate" follows the serving text
+        }
+    }
 
     public string Calories
     {
@@ -47,6 +58,22 @@ public class CustomFoodViewModel : BaseViewModel
         set { if (SetProperty(ref _fat, value)) RefreshEstimate(); }
     }
 
+    /// <summary>How many servings were eaten (Stepper, 0.5–20).</summary>
+    public double Servings
+    {
+        get => _servings;
+        set
+        {
+            if (SetProperty(ref _servings, value))
+                OnPropertyChanged(nameof(ServingsText));
+        }
+    }
+
+    public string ServingsText => $"{Servings:0.#} × {(string.IsNullOrWhiteSpace(Serving) ? "serving" : Serving.Trim())}";
+
+    /// <summary>On = also add it to the food list so it can be searched next time.</summary>
+    public bool SaveToMyFoods { get => _saveToMyFoods; set => SetProperty(ref _saveToMyFoods, value); }
+
     /// <summary>Calories implied by the macros: 4 kcal/g protein and carbs, 9 kcal/g fat.</summary>
     private double MacroCalories =>
         (NumberInput.ToDouble(Protein) ?? 0) * 4 +
@@ -69,9 +96,9 @@ public class CustomFoodViewModel : BaseViewModel
         get
         {
             var estimate = MacroCalories;
-            if (estimate <= 0) return "Tip: protein and carbs are 4 kcal per gram, fat is 9 kcal per gram.";
+            if (estimate <= 0) return "Macros are optional. Protein and carbs are 4 kcal per gram, fat is 9 kcal per gram.";
             return IsMismatch
-                ? $"Heads up: these macros add up to about {estimate:0} kcal. Double-check the label."
+                ? $"Heads up: these macros add up to about {estimate:0} kcal. Double-check the numbers."
                 : $"Macros add up to about {estimate:0} kcal ✓";
         }
     }
@@ -83,18 +110,29 @@ public class CustomFoodViewModel : BaseViewModel
             Name = char.ToUpper(name.Trim()[0]) + name.Trim()[1..];
     }
 
-    /// <returns>(saved food, null) on success, or (null, error message).</returns>
-    public async Task<(FoodItem? food, string? error)> SaveAsync()
+    /// <summary>Checks the form and logs the food to the chosen meal and day.</summary>
+    /// <returns>An error message, or null if logged.</returns>
+    public async Task<string?> LogAsync(MealCategory meal, DateTime date)
+    {
+        var (food, error) = Validate();
+        if (food is null) return error;
+
+        if (Servings is < 0.5 or > 20)
+            return "Choose between 0.5 and 20 servings.";
+
+        await _repo.LogQuickFoodAsync(food, Servings, meal, date, SaveToMyFoods);
+        return null;
+    }
+
+    /// <returns>(food, null) if the form is valid, or (null, error message).</returns>
+    private (FoodItem? food, string? error) Validate()
     {
         if (string.IsNullOrWhiteSpace(Name))
-            return (null, "Please enter a food name.");
-
-        if (string.IsNullOrWhiteSpace(Serving))
-            return (null, "Please describe the serving size (e.g. 1 bowl, 100 g).");
+            return (null, "Please enter what you ate.");
 
         var calories = NumberInput.ToInt(Calories);
         if (calories is null or < 0 or > 3000)
-            return (null, "Calories must be a whole number between 0 and 3000.");
+            return (null, "Calories must be a whole number between 0 and 3000 per serving.");
 
         var protein = NumberInput.ToDouble(string.IsNullOrWhiteSpace(Protein) ? "0" : Protein);
         var carbs = NumberInput.ToDouble(string.IsNullOrWhiteSpace(Carbs) ? "0" : Carbs);
@@ -102,20 +140,15 @@ public class CustomFoodViewModel : BaseViewModel
         if (protein is null or < 0 or > 300 || carbs is null or < 0 or > 500 || fat is null or < 0 or > 300)
             return (null, "Macros must be numbers: protein 0–300 g, carbs 0–500 g, fat 0–300 g.");
 
-        if (await _repo.FoodNameExistsAsync(Name))
-            return (null, $"\"{Name.Trim()}\" is already in your food list.");
-
-        var food = new FoodItem
+        return (new FoodItem
         {
             Name = Name.Trim(),
-            Serving = Serving.Trim(),
+            Serving = string.IsNullOrWhiteSpace(Serving) ? "1 serving" : Serving.Trim(),
             Calories = calories.Value,
             ProteinG = protein.Value,
             CarbsG = carbs.Value,
             FatG = fat.Value
-        };
-        await _repo.AddCustomFoodAsync(food);
-        return (food, null);
+        }, null);
     }
 
     private void RefreshEstimate()

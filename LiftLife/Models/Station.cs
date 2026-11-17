@@ -36,6 +36,43 @@ public class Station
     /// <summary>A "Busy" report older than this is probably out of date.</summary>
     public const int StaleAfterMinutes = 45;
 
+    /// <summary>Rough time each member spends on a station, used for the wait estimate.</summary>
+    public const int MinutesPerMember = 8;
+
+    // ----- Queue info, filled in by the repository (not stored) -----
+
+    [Ignore] public int QueueCount { get; set; }
+
+    /// <summary>My place in this station's queue (1 = next), or 0 if I'm not in it.</summary>
+    [Ignore] public int MyQueuePosition { get; set; }
+
+    /// <summary>Name of the first member waiting, if any.</summary>
+    [Ignore] public string? NextInQueue { get; set; }
+
+    [Ignore] public bool IsInMyQueue => MyQueuePosition > 0;
+
+    /// <summary>Members can queue for a station someone else is using.</summary>
+    [Ignore] public bool CanQueue => Status == StationStatus.Busy && !ClaimedByMe;
+
+    /// <summary>e.g. "👥 2 waiting • about 16 min" (shown under the station name).</summary>
+    [Ignore]
+    public string QueueText => Status switch
+    {
+        StationStatus.OutOfOrder => string.Empty,
+        StationStatus.Free when QueueCount > 0 => $"👥 Next up: {NextInQueue}{(QueueCount > 1 ? $" (+{QueueCount - 1} waiting)" : "")}",
+        StationStatus.Busy when ClaimedByMe && QueueCount > 0 => $"👥 {QueueCount} waiting for you to finish",
+        StationStatus.Busy when MyQueuePosition > 0 => $"👥 You're #{MyQueuePosition} of {QueueCount} • about {MyQueuePosition * MinutesPerMember} min",
+        StationStatus.Busy when QueueCount > 0 => $"👥 {QueueCount} waiting • about {(QueueCount + 1) * MinutesPerMember} min if you join",
+        _ => string.Empty
+    };
+
+    [Ignore] public bool HasQueueText => !string.IsNullOrEmpty(QueueText);
+
+    [Ignore]
+    public string QueueButtonText => MyQueuePosition > 0
+        ? "Leave Queue"
+        : QueueCount > 0 ? $"Join Queue ({QueueCount} waiting)" : "Join Queue";
+
     // ----- Convenience properties for the UI (not stored) -----
 
     /// <summary>Busy for a long time with no update (and not claimed by me) — may be free now.</summary>

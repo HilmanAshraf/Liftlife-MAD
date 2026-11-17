@@ -243,7 +243,7 @@ The ViewModels get the repository through **dependency injection** (registered i
   works out the crowd-density banner, and claims stations. Also contains `CategoryChip`
   (one filter pill, with `IsSelected` driving the lime highlight).
 - **`Views/CommunityPage.xaml` / `.cs`** — the Community Station Hub (screen 2.0):
-  - **Top bar**: "LiftLife" + "📍 Campus Gym"
+  - **Top bar**: "LiftLife" + "📍 UNITEN Gymnasium"
   - **Crowd density banner**: e.g. "GYM DENSITY: QUIET (33%) — 2 of 6 working stations in
     use", with a progress bar. Calculated as busy ÷ working stations (broken ones excluded).
   - **Filter chips**: All / Benches / Cables / Machines / Squat Racks (tap gesture).
@@ -428,9 +428,8 @@ Nutrition tab → **Edit targets ›** → Macro Targets (6.2).
 - **`ViewModels/FoodLogViewModel.cs` + `Views/FoodLogPage`** — screen 5.1: meal chips,
   **search as you type** over the local catalogue, tap to select (lime border, CollectionView
   selection), a servings **Stepper** (0.5–20) with a live kcal/macro preview, **Log Food**.
-- **`ViewModels/CustomFoodViewModel.cs` + `Views/CustomFoodPage`** — screen 5.2: name, serving,
-  calories, protein/carbs/fat. Shows whether the macros add up (4/4/9 kcal per gram) and warns
-  if they're far off. Validation + duplicate-name check. The new food is auto-selected after saving.
+- **`ViewModels/CustomFoodViewModel.cs`** — screen 5.2, now the **Quick Add** tab on the Add Food
+  sheet (see "Feedback changes" below). Shows whether the macros add up (4/4/9 kcal per gram).
 - **`ViewModels/TargetSetupViewModel.cs` + `Views/TargetSetupPage`** — screen 6.2: baseline
   targets, rest-day calorie % and carb % steppers, macro sanity check, a live **preview of both
   days**, Save (with validation) and Reset to Defaults.
@@ -602,3 +601,72 @@ phone these MAUI device APIs actually work, which is better for the demo.
   build signs the app with them.
 - **Q: Why does it stop working after a week?** Free Apple ID profiles are only valid for 7 days;
   a paid developer account gives one year.
+
+---
+
+## Feedback changes (after testing on my iPhone)
+
+### 1. Rest time I control
+- During rest, the floating bar has **−15s / +15s / Skip**. Taking the time to zero ends the rest.
+  (`ActiveWorkoutViewModel.AdjustRestTime`, `SkipRest`)
+- Each exercise card has a **⏱ Rest 1:30** button: pick 30 s–5 min or type a custom time
+  ("75", "1:45", "2m"). It's **saved to that exercise in the routine** (`routine_exercises.RestSeconds`),
+  so next session remembers it. (`SetRestForCurrentAsync`, `ParseRestInput`,
+  `LiftLifeRepository.UpdateRoutineExerciseRestAsync`)
+
+### 2. Bigger session stats
+- Two large stat boxes under the header: **WORKOUT TIME** (lime, 32 pt bold) and **TOTAL VOLUME**.
+
+### 3. Rest alert you can actually feel
+- `Services/RestAlert.cs` plays **three strong 0.45 s buzzes** with iOS **Core Haptics**
+  (`CHHapticEngine`, intensity 1.0). Core Haptics still works in silent mode, unlike the normal
+  `Vibration` API, which only gave a light tap on my iPhone. Other platforms fall back to `Vibration`.
+- When rest ends, the bar turns **green** and says "Rest over — next set!".
+- Note: the alert only fires while LiftLife is open on screen (the timer runs in the app).
+
+### 4. Log any food (Quick Add)
+- The Add Food sheet now has two tabs: **🔍 Search Foods** and **✏️ Quick Add**.
+- **Quick Add:** type what you ate, calories per serving, serving (e.g. "1 plate"), optional macros,
+  and servings eaten → **Log Food**. **Save to My Foods** (on by default) also adds it to the food
+  list so it can be searched next time; switch it off for a one-off meal.
+  (`CustomFoodViewModel.LogAsync`, `LiftLifeRepository.LogQuickFoodAsync`)
+- If a search finds nothing, a **Quick Add it** button fills in the name you searched for.
+- The old separate Custom Food screen was removed — Quick Add replaces it.
+- **17 Malaysian campus foods** were added (nasi goreng, chicken rice, roti canai, teh tarik,
+  milo ais, char kuey teow…). `SeedLocalFoodsAsync` only adds names that don't exist yet, so it
+  also updates older databases.
+
+### 5 & 6. UNITEN Gymnasium
+- The density card uses a photo of the **UNITEN Gymnasium** (`photo_uniten_gym.jpg`), with a
+  stronger dark fade because the photo is bright. The location label now says
+  **📍 UNITEN Gymnasium**.
+
+### 7. Machine queues
+- New table **`station_queue`** (`Models/StationQueueEntry.cs`): station, member, join time, and
+  `IsMe` for this phone's member.
+- **Community card** for a busy machine: "👥 2 waiting • about 24 min if you join" and a
+  **Join Queue (2 waiting)** button → "You're #3, about 24 min". Then it shows your place and a
+  **Leave Queue** button. Estimate = people ahead × 8 min (`Station.MinutesPerMember`).
+- **When the machine is free:** "👥 Next up: Imran". If you claim it while someone else is next,
+  the app asks first. Claiming removes you from that queue.
+- **Out of order** clears the queue. Queue entries **expire after 2 hours**.
+- **Station Log** page shows the queue in order (1, 2, 3…) with join times, plus Join/Leave.
+- The density banner also counts members in queues.
+
+### Verified
+Built with no errors. Checked on a clean simulator, then read the SQLite file directly:
+- queue rows for the sample members and my own join (`IsMe = 1`)
+- a custom rest of "1:45" saved as 105 seconds on Barbell Bench Press
+- Quick Add "Nasi Kerabu" × 1.5 logged as 780 kcal and saved to My Foods
+- a one-off "Kuih Lapis" logged without being added to the food list
+- the new local foods present
+
+### Likely questions & my answers
+- **Q: Why Core Haptics instead of `Vibration.Vibrate`?** On iPhone the standard API plays one
+  short system vibration that can be muted. Core Haptics lets me design a stronger pattern
+  (three long buzzes at full intensity) and it isn't silenced by the mute switch.
+- **Q: How is the queue order decided?** First come, first served: entries are sorted by `JoinedAt`,
+  and the position is the index + 1.
+- **Q: How is the wait time estimated?** Number of people ahead of you × 8 minutes per person.
+- **Q: What happens to a one-off Quick Add food?** It's stored only in `meal_logs` (with `FoodId = 0`),
+  so it counts for that day but doesn't clutter the food list.

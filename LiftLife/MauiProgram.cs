@@ -31,7 +31,7 @@ public static class MauiProgram
 		builder.Services.AddTransient<QuickSwapViewModel>();
 		builder.Services.AddTransient<NutritionViewModel>();
 		builder.Services.AddTransient<FoodLogViewModel>();
-		builder.Services.AddTransient<CustomFoodViewModel>();
+		builder.Services.AddTransient<CustomFoodViewModel>(); // the Quick Add form inside FoodLogViewModel
 		builder.Services.AddTransient<TargetSetupViewModel>();
 		builder.Services.AddTransient<StationDetailViewModel>();
 		builder.Services.AddTransient<AboutViewModel>();

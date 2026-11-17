@@ -26,6 +26,17 @@ public partial class StationDetailPage : ContentPage
         await _vm.LoadAsync(_stationId);
     }
 
+    private async void OnQueueClicked(object? sender, EventArgs e)
+    {
+        if (_vm.Station is null) return;
+
+        var name = await MemberNamePrompt.EnsureAsync(this, _repo);
+        if (name is null) return;
+
+        await _vm.ToggleQueueAsync(name);
+        try { HapticFeedback.Default.Perform(HapticFeedbackType.Click); } catch { }
+    }
+
     private async void OnUpdateStatusClicked(object? sender, EventArgs e)
     {
         if (_vm.Station is null) return;

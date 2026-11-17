@@ -9,7 +9,18 @@
              ios:Page.ModalPresentationStyle="PageSheet"
              BackgroundColor="{StaticResource AppBackground}">
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Padding="20,24,20,24" RowSpacing="14">
+    <ContentPage.Resources>
+        <!-- One half of the Search / Quick Add tab switch -->
+        <Style x:Key="TabLabel" TargetType="Label">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="HorizontalTextAlignment" Value="Center" />
+            <Setter Property="VerticalTextAlignment" Value="Center" />
+            <Setter Property="TextColor" Value="{StaticResource TextSecondary}" />
+        </Style>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="20,24,20,24" RowSpacing="14">
 
         <!-- Header -->
         <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
@@ -58,89 +69,227 @@
             </BindableLayout.ItemTemplate>
         </HorizontalStackLayout>
 
-        <!-- Search box -->
-        <Border Grid.Row="2" Style="{StaticResource FieldBox}" Padding="12,0">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                <Label Text="🔍" VerticalOptions="Center" />
-                <Entry Grid.Column="1" Text="{Binding SearchText}"
-                       Placeholder="Search foods (e.g. chicken, rice)"
-                       Style="{StaticResource LiftEntry}"
-                       ClearButtonVisibility="WhileEditing"
-                       ReturnType="Search" />
+        <!-- Tab switch: Search Foods | Quick Add -->
+        <Border Grid.Row="2" Padding="4" HeightRequest="46"
+                BackgroundColor="{StaticResource SurfaceCard}" Stroke="{StaticResource StrokeColor}" StrokeThickness="1">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="14" />
+            </Border.StrokeShape>
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
+                <Border StrokeThickness="0" BackgroundColor="Transparent">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="10" />
+                    </Border.StrokeShape>
+                    <Border.Triggers>
+                        <DataTrigger TargetType="Border" Binding="{Binding IsSearch}" Value="True">
+                            <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                        </DataTrigger>
+                    </Border.Triggers>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnSearchTabTapped" />
+                    </Border.GestureRecognizers>
+                    <Label Text="🔍 Search Foods" Style="{StaticResource TabLabel}">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding IsSearch}" Value="True">
+                                <Setter Property="TextColor" Value="{StaticResource PrimaryDarkText}" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+                </Border>
+                <Border Grid.Column="1" StrokeThickness="0" BackgroundColor="Transparent">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="10" />
+                    </Border.StrokeShape>
+                    <Border.Triggers>
+                        <DataTrigger TargetType="Border" Binding="{Binding IsQuickAdd}" Value="True">
+                            <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                        </DataTrigger>
+                    </Border.Triggers>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnQuickAddTabTapped" />
+                    </Border.GestureRecognizers>
+                    <Label Text="✏️ Quick Add" Style="{StaticResource TabLabel}">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding IsQuickAdd}" Value="True">
+                                <Setter Property="TextColor" Value="{StaticResource PrimaryDarkText}" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+                </Border>
             </Grid>
         </Border>
 
-        <!-- Local food catalogue -->
-        <CollectionView Grid.Row="3"
-                        ItemsSource="{Binding Foods}"
-                        SelectionMode="Single"
-                        SelectedItem="{Binding SelectedFood, Mode=TwoWay}">
-            <CollectionView.ItemsLayout>
-                <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
-            </CollectionView.ItemsLayout>
+        <!-- ===== Tab 1: search the food list ===== -->
+        <Grid Grid.Row="3" RowDefinitions="Auto,*,Auto" RowSpacing="14" IsVisible="{Binding IsSearch}">
 
-            <CollectionView.EmptyView>
-                <VerticalStackLayout Spacing="6" Margin="0,30,0,0" HorizontalOptions="Center">
-                    <Label Text="No foods match your search" Style="{StaticResource CardTitle}" FontSize="15"
-                           HorizontalOptions="Center" />
-                    <Label Text="Create it as a custom food below." Style="{StaticResource SubtleText}"
-                           HorizontalOptions="Center" />
+            <Border Grid.Row="0" Style="{StaticResource FieldBox}" Padding="12,0">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                    <Label Text="🔍" VerticalOptions="Center" />
+                    <Entry Grid.Column="1" Text="{Binding SearchText}"
+                           Placeholder="Search foods (e.g. nasi lemak, chicken)"
+                           Style="{StaticResource LiftEntry}"
+                           ClearButtonVisibility="WhileEditing"
+                           ReturnType="Search" />
+                </Grid>
+            </Border>
+
+            <CollectionView Grid.Row="1"
+                            ItemsSource="{Binding Foods}"
+                            SelectionMode="Single"
+                            SelectedItem="{Binding SelectedFood, Mode=TwoWay}">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
+                </CollectionView.ItemsLayout>
+
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout Spacing="10" Margin="0,24,0,0" HorizontalOptions="Center">
+                        <Label Text="Not in the list?" Style="{StaticResource CardTitle}" FontSize="15"
+                               HorizontalOptions="Center" />
+                        <Label Text="Type it in yourself with Quick Add." Style="{StaticResource SubtleText}"
+                               HorizontalOptions="Center" />
+                        <Button Text="✏️ Quick Add it" Style="{StaticResource PrimaryButton}" HeightRequest="44"
+                                Padding="20,0" HorizontalOptions="Center" Clicked="OnQuickAddTabTapped" />
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:FoodItem">
+                        <Border Style="{StaticResource Card}" Padding="14,12">
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroupList>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Normal" />
+                                        <VisualState x:Name="Selected">
+                                            <VisualState.Setters>
+                                                <Setter Property="Stroke" Value="{StaticResource Primary}" />
+                                                <Setter Property="StrokeThickness" Value="2" />
+                                                <Setter Property="BackgroundColor" Value="{StaticResource SurfaceElevated}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                </VisualStateGroupList>
+                            </VisualStateManager.VisualStateGroups>
+
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <VerticalStackLayout Spacing="2">
+                                    <HorizontalStackLayout Spacing="8">
+                                        <Label Text="{Binding Name}" Style="{StaticResource BodyText}" FontAttributes="Bold" />
+                                        <Label Text="MY FOOD" IsVisible="{Binding IsCustom}" FontSize="10" FontAttributes="Bold"
+                                               TextColor="{StaticResource Primary}" VerticalOptions="Center" />
+                                    </HorizontalStackLayout>
+                                    <Label Text="{Binding ServingLine}" Style="{StaticResource SubtleText}" FontSize="12" />
+                                </VerticalStackLayout>
+                                <Label Grid.Column="1" Text="{Binding CaloriesText}" FontAttributes="Bold"
+                                       TextColor="{StaticResource Primary}" VerticalOptions="Center" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+
+                <CollectionView.Footer>
+                    <Button Text="Can't find it? ✏️ Quick Add your own food" Style="{StaticResource OutlineButton}"
+                            Margin="0,4,0,8" Clicked="OnQuickAddTabTapped" />
+                </CollectionView.Footer>
+            </CollectionView>
+
+            <!-- Portion logger -->
+            <Border Grid.Row="2" Style="{StaticResource CardElevated}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="{Binding SelectedName}" Style="{StaticResource CardTitle}" FontSize="15" />
+                    <Label Text="{Binding PreviewText}" Style="{StaticResource SubtleText}" />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                        <Label Text="{Binding QuantityText}" Style="{StaticResource BodyText}" FontAttributes="Bold"
+                               VerticalOptions="Center" />
+                        <Stepper Grid.Column="1" Value="{Binding Quantity}"
+                                 Minimum="0.5" Maximum="20" Increment="0.5" />
+                    </Grid>
+                    <Button Text="LOG FOOD" Style="{StaticResource PrimaryButton}" Clicked="OnLogClicked" />
                 </VerticalStackLayout>
-            </CollectionView.EmptyView>
+            </Border>
+        </Grid>
 
-            <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="models:FoodItem">
-                    <Border Style="{StaticResource Card}" Padding="14,12">
-                        <VisualStateManager.VisualStateGroups>
-                            <VisualStateGroupList>
-                                <VisualStateGroup x:Name="CommonStates">
-                                    <VisualState x:Name="Normal" />
-                                    <VisualState x:Name="Selected">
-                                        <VisualState.Setters>
-                                            <Setter Property="Stroke" Value="{StaticResource Primary}" />
-                                            <Setter Property="StrokeThickness" Value="2" />
-                                            <Setter Property="BackgroundColor" Value="{StaticResource SurfaceElevated}" />
-                                        </VisualState.Setters>
-                                    </VisualState>
-                                </VisualStateGroup>
-                            </VisualStateGroupList>
-                        </VisualStateManager.VisualStateGroups>
+        <!-- ===== Tab 2: Quick Add (type in any food) ===== -->
+        <Grid Grid.Row="3" RowDefinitions="*,Auto" RowSpacing="14" IsVisible="{Binding IsQuickAdd}">
+            <ScrollView Grid.Row="0">
+                <VerticalStackLayout Spacing="14">
+                    <Border Style="{StaticResource Card}">
+                        <VerticalStackLayout Spacing="10">
+                            <Label Text="WHAT DID YOU EAT?" Style="{StaticResource MutedCaption}" />
+                            <Border Style="{StaticResource FieldBox}">
+                                <Entry Text="{Binding QuickAdd.Name}" Placeholder="e.g. Nasi kerabu from the cafe"
+                                       Style="{StaticResource LiftEntry}" MaxLength="40" />
+                            </Border>
 
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto" RowSpacing="4">
+                                <Label Text="CALORIES (KCAL)" Style="{StaticResource MutedCaption}" />
+                                <Label Grid.Column="1" Text="SERVING" Style="{StaticResource MutedCaption}" />
+                                <Border Grid.Row="1" Style="{StaticResource FieldBox}">
+                                    <Entry Text="{Binding QuickAdd.Calories}" Placeholder="e.g. 520" Keyboard="Numeric"
+                                           Style="{StaticResource LiftEntry}" MaxLength="4" />
+                                </Border>
+                                <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource FieldBox}">
+                                    <Entry Text="{Binding QuickAdd.Serving}" Placeholder="1 plate"
+                                           Style="{StaticResource LiftEntry}" MaxLength="20" />
+                                </Border>
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <VerticalStackLayout Spacing="10">
+                            <Label Text="MACROS (GRAMS, OPTIONAL)" Style="{StaticResource MutedCaption}" />
+                            <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="4">
+                                <Label Text="PROTEIN" Style="{StaticResource MutedCaption}" TextColor="{StaticResource MacroProtein}" />
+                                <Label Grid.Column="1" Text="CARBS" Style="{StaticResource MutedCaption}" TextColor="{StaticResource MacroCarbs}" />
+                                <Label Grid.Column="2" Text="FAT" Style="{StaticResource MutedCaption}" TextColor="{StaticResource MacroFat}" />
+                                <Border Grid.Row="1" Style="{StaticResource FieldBox}">
+                                    <Entry Text="{Binding QuickAdd.Protein}" Placeholder="0" Keyboard="Numeric" MaxLength="5"
+                                           Style="{StaticResource LiftEntry}" HorizontalTextAlignment="Center" />
+                                </Border>
+                                <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource FieldBox}">
+                                    <Entry Text="{Binding QuickAdd.Carbs}" Placeholder="0" Keyboard="Numeric" MaxLength="5"
+                                           Style="{StaticResource LiftEntry}" HorizontalTextAlignment="Center" />
+                                </Border>
+                                <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource FieldBox}">
+                                    <Entry Text="{Binding QuickAdd.Fat}" Placeholder="0" Keyboard="Numeric" MaxLength="5"
+                                           Style="{StaticResource LiftEntry}" HorizontalTextAlignment="Center" />
+                                </Border>
+                            </Grid>
+                            <Label Text="{Binding QuickAdd.EstimateText}" Style="{StaticResource SubtleText}" FontSize="12">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding QuickAdd.IsMismatch}" Value="True">
+                                        <Setter Property="TextColor" Value="{StaticResource StatusWarning}" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Padding="16,12">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                            <VerticalStackLayout Spacing="2">
-                                <HorizontalStackLayout Spacing="8">
-                                    <Label Text="{Binding Name}" Style="{StaticResource BodyText}" FontAttributes="Bold" />
-                                    <Label Text="CUSTOM" IsVisible="{Binding IsCustom}" FontSize="10" FontAttributes="Bold"
-                                           TextColor="{StaticResource Primary}" VerticalOptions="Center" />
-                                </HorizontalStackLayout>
-                                <Label Text="{Binding ServingLine}" Style="{StaticResource SubtleText}" FontSize="12" />
+                            <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                                <Label Text="Save to My Foods" Style="{StaticResource BodyText}" FontAttributes="Bold" />
+                                <Label Text="Find it in Search next time" Style="{StaticResource SubtleText}" FontSize="12" />
                             </VerticalStackLayout>
-                            <Label Grid.Column="1" Text="{Binding CaloriesText}" FontAttributes="Bold"
-                                   TextColor="{StaticResource Primary}" VerticalOptions="Center" />
+                            <Switch Grid.Column="1" IsToggled="{Binding QuickAdd.SaveToMyFoods}"
+                                    OnColor="{StaticResource Primary}" ThumbColor="{StaticResource TextPrimary}"
+                                    VerticalOptions="Center" />
                         </Grid>
                     </Border>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
+                </VerticalStackLayout>
+            </ScrollView>
 
-            <CollectionView.Footer>
-                <Button Text="+ Create Custom Food" Style="{StaticResource OutlineButton}"
-                        Margin="0,4,0,8" Clicked="OnCreateCustomClicked" />
-            </CollectionView.Footer>
-        </CollectionView>
-
-        <!-- Portion logger -->
-        <Border Grid.Row="4" Style="{StaticResource CardElevated}">
-            <VerticalStackLayout Spacing="10">
-                <Label Text="{Binding SelectedName}" Style="{StaticResource CardTitle}" FontSize="15" />
-                <Label Text="{Binding PreviewText}" Style="{StaticResource SubtleText}" />
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                    <Label Text="{Binding QuantityText}" Style="{StaticResource BodyText}" FontAttributes="Bold"
-                           VerticalOptions="Center" />
-                    <Stepper Grid.Column="1" Value="{Binding Quantity}"
-                             Minimum="0.5" Maximum="20" Increment="0.5" />
-                </Grid>
-                <Button Text="LOG FOOD" Style="{StaticResource PrimaryButton}" Clicked="OnLogClicked" />
-            </VerticalStackLayout>
-        </Border>
+            <Border Grid.Row="1" Style="{StaticResource CardElevated}">
+                <VerticalStackLayout Spacing="10">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                        <Label Text="{Binding QuickAdd.ServingsText}" Style="{StaticResource BodyText}" FontAttributes="Bold"
+                               VerticalOptions="Center" />
+                        <Stepper Grid.Column="1" Value="{Binding QuickAdd.Servings}"
+                                 Minimum="0.5" Maximum="20" Increment="0.5" />
+                    </Grid>
+                    <Button Text="LOG FOOD" Style="{StaticResource PrimaryButton}" Clicked="OnLogClicked" />
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
     </Grid>
 </ContentPage>

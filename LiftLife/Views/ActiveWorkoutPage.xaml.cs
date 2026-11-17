@@ -100,7 +100,55 @@ public partial class ActiveWorkoutPage : ContentPage
     }
 
     private void OnAddSetClicked(object? sender, EventArgs e) => _vm.AddSet();
-    private void OnAddRestClicked(object? sender, EventArgs e) => _vm.AddRestTime(15);
+    private void OnAddRestClicked(object? sender, EventArgs e) => _vm.AdjustRestTime(15);
+    private void OnReduceRestClicked(object? sender, EventArgs e) => _vm.AdjustRestTime(-15);
+
+    private static readonly (string label, int seconds)[] RestPresets =
+    {
+        ("30 sec", 30), ("45 sec", 45), ("1:00", 60), ("1:30", 90), ("2:00", 120),
+        ("2:30", 150), ("3:00", 180), ("4:00", 240), ("5:00", 300),
+    };
+
+    /// <summary>
+    /// Lets the member pick their own rest time for this exercise (preset or custom).
+    /// It's saved to the routine, so it's remembered next session.
+    /// </summary>
+    private async void OnRestTimeClicked(object? sender, EventArgs e)
+    {
+        if (_vm.CurrentExercise is null) return;
+
+        const string custom = "Custom…";
+        var options = RestPresets.Select(p => p.label).Append(custom).ToArray();
+        var choice = await DisplayActionSheetAsync(
+            $"Rest after each set of {_vm.CurrentExercise.Name}", "Cancel", null, options);
+        if (choice is null || choice == "Cancel") return;
+
+        int? seconds = RestPresets.FirstOrDefault(p => p.label == choice).seconds;
+        if (choice == custom)
+        {
+            var input = await DisplayPromptAsync("Custom Rest",
+                "Enter seconds (e.g. 75) or minutes:seconds (e.g. 1:45).",
+                accept: "Set", cancel: "Cancel", placeholder: "1:45", maxLength: 5, keyboard: Keyboard.Text,
+                initialValue: $"{_vm.CurrentExercise.RestSeconds / 60}:{_vm.CurrentExercise.RestSeconds % 60:00}");
+            if (input is null) return;
+
+            seconds = ActiveWorkoutViewModel.ParseRestInput(input);
+            if (seconds is null)
+            {
+                await DisplayAlertAsync("Check the Time", "Use seconds (75) or minutes:seconds (1:45).", "OK");
+                return;
+            }
+        }
+
+        var error = await _vm.SetRestForCurrentAsync(seconds!.Value);
+        if (error is not null)
+        {
+            await DisplayAlertAsync("Check the Time", error, "OK");
+            return;
+        }
+
+        try { HapticFeedback.Default.Perform(HapticFeedbackType.Click); } catch { }
+    }
     private void OnSkipRestClicked(object? sender, EventArgs e) => _vm.SkipRest();
     private void OnPreviousClicked(object? sender, EventArgs e) => _vm.Previous();
     private void OnSwipedLeft(object? sender, SwipedEventArgs e) => _vm.Next();

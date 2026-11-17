@@ -20,7 +20,12 @@ public class LiftLifeRepository
         var query = conn.Table<Station>();
         if (!string.IsNullOrWhiteSpace(category) && category != "All")
             query = query.Where(s => s.Category == category);
-        return await query.OrderBy(s => s.Name).ToListAsync();
+        var stations = await query.OrderBy(s => s.Name).ToListAsync();
+
+        var queues = await GetActiveQueueEntriesAsync();
+        foreach (var station in stations)
+            ApplyQueueInfo(station, queues.Where(q => q.StationId == station.Id).ToList());
+        return stations;
     }
 
     public async Task<List<string>> GetStationCategoriesAsync()
@@ -58,12 +63,77 @@ public class LiftLifeRepository
             ReportedBy = reportedBy,
             ReportedAt = station.LastUpdated
         });
+
+        // Claiming a station takes me out of its queue; a broken station can't have a queue.
+        if (claimedByMe)
+            await conn.ExecuteAsync("DELETE FROM station_queue WHERE StationId = ? AND IsMe = 1", stationId);
+        else if (status == StationStatus.OutOfOrder)
+            await conn.ExecuteAsync("DELETE FROM station_queue WHERE StationId = ?", stationId);
     }
 
     public async Task<Station?> GetStationAsync(int stationId)
     {
         var conn = await _db.GetConnectionAsync();
-        return await conn.FindAsync<Station>(stationId);
+        var station = await conn.FindAsync<Station>(stationId);
+        if (station is not null)
+            ApplyQueueInfo(station, await GetQueueAsync(stationId));
+        return station;
+    }
+
+    // ---------------- Station queues ----------------
+
+    /// <summary>All queue entries that haven't expired, oldest first. Expired ones are deleted.</summary>
+    private async Task<List<StationQueueEntry>> GetActiveQueueEntriesAsync()
+    {
+        var conn = await _db.GetConnectionAsync();
+        var cutoff = DateTime.Now.AddMinutes(-StationQueueEntry.ExpireAfterMinutes);
+        await conn.ExecuteAsync("DELETE FROM station_queue WHERE JoinedAt < ?", cutoff);
+        return await conn.Table<StationQueueEntry>().OrderBy(q => q.JoinedAt).ToListAsync();
+    }
+
+    /// <summary>One station's queue in order, with positions 1, 2, 3…</summary>
+    public async Task<List<StationQueueEntry>> GetQueueAsync(int stationId)
+    {
+        var queue = (await GetActiveQueueEntriesAsync()).Where(q => q.StationId == stationId).ToList();
+        for (var i = 0; i < queue.Count; i++)
+            queue[i].Position = i + 1;
+        return queue;
+    }
+
+    /// <summary>Adds this member to the end of a station's queue (once only).</summary>
+    public async Task JoinQueueAsync(int stationId, string memberName)
+    {
+        var conn = await _db.GetConnectionAsync();
+        var already = await conn.Table<StationQueueEntry>()
+            .Where(q => q.StationId == stationId && q.IsMe == true)
+            .CountAsync();
+        if (already > 0) return;
+
+        await conn.InsertAsync(new StationQueueEntry
+        {
+            StationId = stationId,
+            MemberName = memberName,
+            JoinedAt = DateTime.Now,
+            IsMe = true
+        });
+    }
+
+    /// <summary>Total members waiting across all stations (for the density banner).</summary>
+    public async Task<int> GetWaitingCountAsync() => (await GetActiveQueueEntriesAsync()).Count;
+
+    public async Task LeaveQueueAsync(int stationId)
+    {
+        var conn = await _db.GetConnectionAsync();
+        await conn.ExecuteAsync("DELETE FROM station_queue WHERE StationId = ? AND IsMe = 1", stationId);
+    }
+
+    /// <summary>Fills a station's queue display fields from its (ordered) queue entries.</summary>
+    private static void ApplyQueueInfo(Station station, List<StationQueueEntry> queue)
+    {
+        station.QueueCount = queue.Count;
+        station.NextInQueue = queue.FirstOrDefault()?.MemberName;
+        var mine = queue.FindIndex(q => q.IsMe);
+        station.MyQueuePosition = mine < 0 ? 0 : mine + 1;
     }
 
     /// <summary>A station's maintenance log, newest first.</summary>
@@ -97,6 +167,7 @@ public class LiftLifeRepository
         {
             ("Gym stations", await conn.Table<Station>().CountAsync()),
             ("Station reports", await conn.Table<StationReport>().CountAsync()),
+            ("Members in queues", await conn.Table<StationQueueEntry>().CountAsync()),
             ("Exercises", await conn.Table<Exercise>().CountAsync()),
             ("Routines", await conn.Table<Routine>().CountAsync()),
             ("Workouts completed", await conn.Table<WorkoutSession>().Where(s => s.IsCompleted).CountAsync()),
@@ -330,6 +401,16 @@ public class LiftLifeRepository
         return logs.OrderByDescending(s => s.WeightKg).ThenByDescending(s => s.Reps).FirstOrDefault();
     }
 
+    /// <summary>Saves a member's custom rest time for one exercise in a routine.</summary>
+    public async Task UpdateRoutineExerciseRestAsync(int routineExerciseId, int restSeconds)
+    {
+        var conn = await _db.GetConnectionAsync();
+        var row = await conn.FindAsync<RoutineExercise>(routineExerciseId);
+        if (row is null) return;
+        row.RestSeconds = restSeconds;
+        await conn.UpdateAsync(row);
+    }
+
     /// <summary>Permanent swap: the routine will use the new exercise from now on.</summary>
     public async Task UpdateRoutineExerciseAsync(int routineExerciseId, int newExerciseId)
     {
@@ -419,6 +500,19 @@ public class LiftLifeRepository
     /// <summary>Logs a food against a meal and date (macros = food × quantity).</summary>
     public Task LogFoodAsync(FoodItem food, double quantity, MealCategory category, DateTime date) =>
         LogMealAsync(MealLog.From(food, quantity, category, date));
+
+    /// <summary>
+    /// Quick Add: logs a food the member typed in themselves. If <paramref name="saveToMyFoods"/>
+    /// is true it's also saved to the food list for next time; otherwise it's a one-off entry.
+    /// </summary>
+    public async Task LogQuickFoodAsync(FoodItem food, double quantity, MealCategory category, DateTime date,
+        bool saveToMyFoods)
+    {
+        if (saveToMyFoods && !await FoodNameExistsAsync(food.Name))
+            await AddCustomFoodAsync(food); // gives the food an Id, so the log links to it
+
+        await LogFoodAsync(food, quantity, category, date);
+    }
 
     /// <summary>Changes the amount of a logged food and recalculates its macros.</summary>
     public async Task UpdateMealQuantityAsync(MealLog log, double quantity)

@@ -110,7 +110,7 @@
                 <Button Text="Reset Demo Data" Style="{StaticResource OutlineButton}"
                         TextColor="{StaticResource StatusBusy}" Clicked="OnResetClicked" />
 
-                <Label Text="Gym photos from Pexels (pexels.com), used under the free Pexels Licence"
+                <Label Text="Exercise photos from Pexels (pexels.com), used under the free Pexels Licence • Gym photo: UNITEN Gymnasium"
                        Style="{StaticResource MutedCaption}" HorizontalOptions="Center"
                        HorizontalTextAlignment="Center" Margin="0,4,0,0" />
 
