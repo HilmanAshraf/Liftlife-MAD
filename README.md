@@ -50,7 +50,14 @@ LiftLife/
 docs/PROGRESS_NOTES.md  Day-by-day development log with explanations
 ```
 
-## Build & run on the iOS simulator
+## Quick run on the simulator (after any code change)
+```bash
+./run-sim.sh
+```
+Builds, reinstalls and reopens LiftLife on the iOS simulator, keeping its data. A small change takes
+about 10 seconds.
+
+## Build & run on the iOS simulator (manual steps)
 ```bash
 # one-time: point the toolchain at Xcode
 sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
