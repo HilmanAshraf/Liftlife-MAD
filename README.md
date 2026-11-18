@@ -91,16 +91,15 @@ See `docs/PROGRESS_NOTES.md` for screen-by-screen explanations of the code.
 
 ## Documentation
 - `docs/PROGRESS_NOTES.md` — how each screen works, which files it uses, likely questions
-- `docs/AI_USE.md` — how AI was used to build this project
 - `docs/MEDIA_CREDITS.md` — image sources and licences
 - `docs/MOCK_QA.md`, `docs/DEMO_SCRIPT.md` — my presentation practice and demo plan
 
 ## AI use
 This project was built with help from **Kiro**, an AI coding assistant. I wrote the M1 proposal and
 M2 design, directed the build in stages, tested every stage on the simulator and my iPhone, and asked
-for changes based on that testing. The AI generated most of the code. Full details, with example
-prompts and the problems found, are in `docs/AI_USE.md`.
+for changes based on that testing.
 
 ## Developer
+
 Mohamed Hilman Ashraf Bin Mohamed Ashraf — BSW01085755
 Bachelor in Software Engineering (Hons), Universiti Tenaga Nasional (UNITEN)
