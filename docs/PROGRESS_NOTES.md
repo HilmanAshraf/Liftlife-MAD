@@ -1,673 +1,524 @@
-# LiftLife — Development Progress & Explainer Notes
+# LiftLife — Explainer Notes (screen by screen)
 
 **Student:** Mohamed Hilman Ashraf Bin Mohamed Ashraf (BSW01085755)
 **Course:** CSNB544 Mobile Application Development
 **App:** LiftLife — Community Gym Hub & Routine Tracker
-**Framework:** .NET MAUI (C# + XAML)
-**Database:** SQLite (local, offline-first)
-**Primary platform:** iOS (developed and tested on iPhone / Mac)
+**Framework:** .NET MAUI (C# + XAML) • **Database:** SQLite (local, offline-first)
+**Primary platform:** iOS (tested on the iPhone simulator and my iPhone 14 Pro)
 
-> This document is my working log. For each development day I record what I built,
-> which files I touched, and *why* — so I can explain the app and answer questions
-> about how it works.
-
----
-
-## Why .NET MAUI + VS Code on a Mac
-
-The exam brief asks for .NET MAUI, built with Visual Studio. Visual Studio **for Mac**
-was officially retired by Microsoft on **31 August 2024**. Microsoft's own replacement
-for Mac developers is **Visual Studio Code with the C# Dev Kit + .NET MAUI extensions**,
-which is the current official Mac toolchain. That is what this project uses.
-
-- Framework: .NET MAUI on .NET 10
-- Editor: VS Code with C# Dev Kit and .NET MAUI extensions
-- Database: SQLite via the `sqlite-net-pcl` library (local file storage on device)
+> These notes follow the app page by page, using the numbers from my Section A screens map.
+> For each screen: what it shows, which files make it work, and the questions I expect.
+> How AI was used to build the app is explained in `docs/AI_USE.md`.
 
 ---
 
-## How the app is structured (the big picture)
-
-A .NET MAUI app has one shared C# codebase that compiles to native iOS (and Android).
-The key pieces:
-
-- **`App.xaml` / `App.xaml.cs`** — the application entry point. It sets the global theme
-  and decides which page shows first (the splash screen).
-- **`AppShell.xaml`** — defines the app's navigation. LiftLife uses a **bottom tab bar**
-  with four tabs: Community, Workouts, Nutrition, About.
-- **`Views/`** — the screens (pages). Each screen is a `.xaml` file (the layout) plus a
-  `.xaml.cs` file (the code behind it).
-- **`Models/`** — plain C# classes that describe our data (a Station, a Routine, a Food item…).
-  *(Added Day 2.)*
-- **`Data/`** — the SQLite database layer that saves and loads those models.
-- **`Resources/Styles/`** — colors and reusable styles (our dark + lime theme).
-- **`Resources/AppIcon` & `Resources/Splash`** — the custom app icon and splash image.
-- **`MauiProgram.cs`** — app startup configuration and dependency injection (wiring services
-  and pages together).
-
-**Data binding note:** XAML pages bind to data from the models/services, so when the
-data changes the screen updates. This satisfies the "data entry + data manipulation +
-save/retrieve from database" requirements.
-
----
-
-## DAY 1 — Project foundation, theme, navigation, splash
-
-**Goal:** Get a running skeleton: the solution, the brand look, the navigation shell,
-the splash screen, and the SQLite plumbing.
-
-### Files created / changed and what they do
-
-- **`LiftLife.csproj`** — the project definition. I set:
-  - the app name, app id (`com.hilmanashraf.liftlife`), and version `1.0.0`
-  - the custom icon + splash references
-  - added the SQLite packages (`sqlite-net-pcl`, `SQLitePCLRaw.bundle_green`)
-  - made **iOS the primary build target** (Android/Mac Catalyst stay available)
-
-- **`App.xaml`** — merges the color + style dictionaries and forces the app into
-  **Dark mode** (`UserAppTheme="Dark"`), because LiftLife is a dark-themed app.
-
-- **`App.xaml.cs`** — on startup the window opens the **SplashPage** first.
-
-- **`Resources/Styles/Colors.xaml`** — the LiftLife brand palette:
-  - lime/yellow accent `#E9F558` (from the "L" logo)
-  - near-black background `#0B0B0F`, dark card surfaces
-  - status colors: green = free, red = busy, grey = out of order
-
-- **`Resources/Styles/LiftLifeStyles.xaml`** — reusable styles so every screen looks
-  consistent: `Card`, `ScreenTitle`, `CardTitle`, `PrimaryButton` (lime), `DarkButton`,
-  `OutlineButton`, text styles, entry style.
-
-- **`Views/SplashPage.xaml` / `.cs`** — the welcoming splash screen:
-  - shows the lime "L" squircle logo, "LiftLife", "Community Gym Hub", and the slogan
-    "Smart Community & Digital Innovation"
-  - a background timer waits ~2 seconds, then automatically navigates to the main
-    tabbed dashboard (this is the required "splash auto-navigates to home" behaviour).
-
-- **`AppShell.xaml`** — the bottom navigation bar with the 4 tabs. Styled so the selected
-  tab is lime and unselected tabs are grey.
-
-- **`Views/CommunityPage`, `WorkoutsPage`, `NutritionPage`, `AboutPage`** — the four tab
-  screens. On Day 1 these are headers + placeholders; each gets fully built on its day.
-
-- **`Data/LiftLifeDatabase.cs`** — the SQLite connection service. It opens a database file
-  named `liftlife.db3` in the app's private data folder. Tables get registered on Day 2.
-
-- **`MauiProgram.cs`** — registers the database as a shared singleton and registers the
-  pages for dependency injection.
-
-- **`Resources/AppIcon/appicon.svg` + `appiconfg.svg`** — the custom app icon: lime "L"
-  squircle on a dark background.
-
-- **`Resources/Splash/splash.svg`** — the splash image used at OS launch. Uses the exact
-  same lime squircle + bold "L" as the app icon, scaled to 80%.
-- **`Resources/Images/logo.svg`** — the same logo as a normal image, shown on the in-app
-  `SplashPage`. So the icon, the iOS launch screen and the splash page all match.
-
-- **`Resources/Images/tab_*.svg`** — the four bottom-tab icons.
-
-### Platform decision & source control (end of Day 1)
-- **Target platform set to iOS** — I use an iPhone, and iOS is the natural fit for a Mac
-  dev setup. Android and Mac Catalyst are still available as secondary build targets, but
-  iOS is primary.
-- **Source control:** the whole project is in Git and pushed to GitHub at
-  `https://github.com/HilmanAshraf/Liftlife-MAD.git` (branch `main`). Build artifacts
-  (`bin/`, `obj/`) and the runtime SQLite file are excluded via `.gitignore`.
-- **One-time local setup to build iOS** (run once in Terminal):
-  `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`
-
-### What I can demo after Day 1
-The app launches → splash screen with the logo → after 2 seconds it lands on the
-bottom-tab dashboard, and I can tap between Community / Workouts / Nutrition / About.
-
-### Likely questions & my answers
-- **Q: Why is Visual Studio for Mac not used?** It was retired by Microsoft in Aug 2024;
-  VS Code with the .NET MAUI extension is the official Mac replacement.
-- **Q: Where is data stored?** In a local SQLite file on the device — fully offline.
-- **Q: How does the splash auto-navigate?** `SplashPage.OnAppearing` runs a 2-second
-  delay then swaps the window's page to `AppShell` (the tabs).
-- **Q: Why dark theme?** It matches the Figma design and gives high contrast for gym use.
+## Contents
+- [Setup: why .NET MAUI + VS Code on a Mac](#setup-why-net-maui--vs-code-on-a-mac)
+- [How the app is structured](#how-the-app-is-structured)
+- [Data layer (SQLite)](#data-layer-sqlite)
+- [1.0 Splash screen, icon and navigation](#10-splash-screen-icon-and-navigation)
+- [2.1 Community Station Hub](#21-community-station-hub)
+- [3.1 Report Status](#31-report-status)
+- [Station Log (maintenance history + queue)](#station-log-maintenance-history--queue)
+- [2.2 Workout Routine Hub](#22-workout-routine-hub)
+- [4.1 Routine Builder](#41-routine-builder)
+- [4.2 Active Workout Session](#42-active-workout-session)
+- [4.3 Quick Swap](#43-quick-swap)
+- [4.4 Form Guide](#44-form-guide)
+- [4.5 Workout Summary](#45-workout-summary)
+- [2.3 Daily Nutrition Hub](#23-daily-nutrition-hub)
+- [5.1 / 5.2 Add Food: Search and Quick Add](#51--52-add-food-search-and-quick-add)
+- [6.2 Macro Targets](#62-macro-targets)
+- [6.1 About LiftLife (2.4 Profile & Settings)](#61-about-liftlife-24-profile--settings)
+- [Images and credits](#images-and-credits)
+- [Running on the simulator and my iPhone](#running-on-the-simulator-and-my-iphone)
+- [Changes from my M2 design](#changes-from-my-m2-design)
+- [Possible future work](#possible-future-work)
 
 ---
 
-## DAY 2 — Data layer: models, SQLite tables, repository, seed data
+## Setup: why .NET MAUI + VS Code on a Mac
 
-**Goal:** Build the complete offline data foundation so every feature screen has
-something real to read from and write to. This is the "Storage + data binding"
-backbone the rubric rewards.
+The brief asks for .NET MAUI with Visual Studio. Microsoft retired **Visual Studio for Mac** on
+**31 August 2024**. Its official replacement on a Mac is **Visual Studio Code with the C# Dev Kit and
+.NET MAUI extensions**, which is what this project uses.
 
-### What I built and why
+- .NET MAUI on .NET 10, built with the .NET SDK and Xcode
+- SQLite through the `sqlite-net-pcl` library
+- iOS is the main target because I use an iPhone. Android and Mac Catalyst are still in the project.
+- Source control: Git, pushed to `https://github.com/HilmanAshraf/Liftlife-MAD`. `bin/`, `obj/` and
+  the database file are excluded in `.gitignore`.
 
-**Models (`Models/`)** — plain C# classes, each marked as a SQLite `[Table]`:
-- **`Station`** — a gym machine with a live status (Free / Busy / Out of Order), who
-  reported it, and when. Has helper properties (`StatusLabel`, `RelativeUpdated` like
-  "2m ago") so the UI stays simple.
-- **`Exercise`** — the master exercise catalogue. Each has a **muscle group** and
-  **equipment** type — these two fields are what make the swap engine work.
-- **`Routine`** + **`RoutineExercise`** — a saved workout split and the exercises in it
-  (with target sets/reps/rest and personal setup notes).
-- **`WorkoutSession`** + **`SetLog`** — a logged workout and each individual set
-  (weight × reps). Session stores total volume for history.
-- **`FoodItem`** + **`MealLog`** — the food catalogue and foods logged per day/meal.
-- **`UserSettings`** — one row holding baseline macro targets and today's day type.
-  It **computes** training-day vs rest-day targets automatically (rest day = fewer
-  calories and carbs). This is the "adaptive nutrition" logic.
-- **`Enums.cs`** — `StationStatus`, `DayType`, `MealCategory`.
-
-**`Data/LiftLifeDatabase.cs`** — opens the SQLite file, creates all tables, and
-**seeds default data on first launch**: ~20 exercises across muscle groups, 7 gym
-stations, 10 common foods, default macro targets, and one sample "Push Day A" routine.
-Seeding checks if a table is empty first, so it only happens once.
-
-**`Data/LiftLifeRepository.cs`** — all the data operations the screens call, so pages
-never touch SQL directly. Highlights:
-- station listing + category filter + status update + crowd-density calculation
-- **the swap engine** (`GetSwapOptionsAsync`): given an exercise, it finds other
-  exercises that train the **same muscle group**, and flags each with whether matching
-  equipment is currently free in the gym. This is the core "crowded gym" innovation.
-- routine CRUD, workout session start/complete (auto-sums volume), nutrition logging.
-
-**`MauiProgram.cs`** — registered the database and repository for dependency injection
-so any page can request them.
-
-### How the swap engine works (likely a key question)
-Every exercise has a `MuscleGroup`. When a station is busy, I ask the repository for
-all other exercises with the *same* muscle group. I then cross-check the live station
-statuses: if an alternative's equipment type has a free station, it's marked
-"Free in Gym". So the suggestion is both **biomechanically valid** (same muscle) and
-**practical** (equipment actually available). All of this runs locally against SQLite —
-no internet needed.
-
-### iOS build confirmed working
-The project now builds successfully for iOS with Xcode 27.1. Two environment notes:
-- The installed .NET for iOS workload expects Xcode 27.0 exactly; the Mac has 27.1
-  (same major band, newer minor). I set `ValidateXcodeVersion=false` in the csproj to
-  skip the strict equality check — a supported flag for this exact situation.
-- The logo SVGs originally used `<text>` for the "L"; the image rasterizer couldn't
-  process text, so I redrew the "L" as vector paths. Icon + splash now build cleanly.
-
-To see it live, install the iOS Simulator runtime once: `xcodebuild -downloadPlatform iOS`.
-
-**Confirmed running on the iPhone 17 simulator (iOS 27.1):** splash screen shows the
-lime "L" logo, auto-navigates after ~2s to the dashboard, and the bottom tab bar
-(Community / Workouts / Nutrition / About) works with the custom tab icons and lime
-selected-tab highlight. Screenshot: `docs/screenshot_dashboard.png`.
-
-To build & run on the simulator from the terminal:
-```bash
-# open the simulator window (Xcode 27 renamed Simulator.app to DeviceHub.app)
-open /Applications/Xcode.app/Contents/Applications/DeviceHub.app
-
-# boot a simulator (one-time per session)
-xcrun simctl boot "iPhone 17"
-cd LiftLife
-dotnet build -t:Run -f net10.0-ios -p:_DeviceName=:v2:udid=<SIMULATOR_UDID>
-```
-
-### Likely questions & my answers
-- **Q: Where does data persist?** A local SQLite database file (`liftlife.db3`) in the
-  app's private storage. It survives app restarts and works fully offline.
-- **Q: How is the database created?** On first launch `CreateTableAsync` builds each
-  table from the model classes, then seed methods insert starter data.
-- **Q: Why a repository instead of querying in the page?** Keeps data logic in one place,
-  makes pages simpler, and is easy to explain/test.
-- **Q: What makes rest-day vs training-day targets change?** `UserSettings` stores a
-  baseline; computed properties scale calories/carbs down on rest days. Protein stays high.
+Two build fixes worth knowing:
+- The iOS workload expected an exact Xcode version and my Mac had a newer minor version.
+  `<ValidateXcodeVersion>false</ValidateXcodeVersion>` in `LiftLife.csproj` skips that strict check.
+- The logo SVGs first used `<text>` for the "L". MAUI's image tool can't render text, so the "L" was
+  redrawn as vector paths.
 
 ---
 
-## How the screens are organised (MVVM pattern, from Day 3 onwards)
+## How the app is structured
 
-Each feature screen has three parts:
-- **View** (`Views/XxxPage.xaml`) — the layout. Uses `{Binding ...}` to show data.
-- **ViewModel** (`ViewModels/XxxViewModel.cs`) — holds the screen's data and logic. It
-  inherits `BaseViewModel`, which implements `INotifyPropertyChanged`, so when a value
-  changes the screen updates automatically. Lists use `ObservableCollection`, so adding or
-  removing an item updates the list on screen.
-- **Code-behind** (`Views/XxxPage.xaml.cs`) — handles taps that need dialogs or
-  navigation (alerts, opening another page), then calls the ViewModel.
+- **`App.xaml` / `App.xaml.cs`** — app entry point. Loads the colours and styles, forces dark mode
+  (`UserAppTheme="Dark"`), and opens the splash page first.
+- **`AppShell.xaml`** — the bottom tab bar: Community, Workouts, Nutrition, About.
+- **`Views/`** — the screens. Each is a `.xaml` layout plus a `.xaml.cs` code-behind.
+- **`ViewModels/`** — each screen's data and logic (MVVM).
+- **`Models/`** — C# classes for the data. Most are SQLite tables.
+- **`Data/`** — `LiftLifeDatabase` (connection, tables, seed data) and `LiftLifeRepository` (all queries).
+- **`Services/`** — small helpers (rest alert, images, number input, time labels, member name).
+- **`Converters/`** — XAML value converters (station status → badge colour).
+- **`Resources/`** — styles, colours, fonts, app icon, splash, images.
+- **`MauiProgram.cs`** — startup and dependency injection.
 
-The ViewModels get the repository through **dependency injection** (registered in
-`MauiProgram.cs`). `Services/ServiceHelper.cs` is a small helper that fetches them.
+### MVVM (how every feature screen works)
+- **View** (`Views/XxxPage.xaml`) — the layout. It shows data with `{Binding ...}`.
+- **ViewModel** (`ViewModels/XxxViewModel.cs`) — holds the data and logic. It inherits
+  `BaseViewModel`, which implements `INotifyPropertyChanged`. `SetProperty` raises `PropertyChanged`
+  only when a value really changes, so the screen updates by itself. Lists use
+  `ObservableCollection`, so adding or removing an item updates the list.
+- **Code-behind** (`Views/XxxPage.xaml.cs`) — handles things that need the page: alerts, prompts and
+  navigation. Then it calls the ViewModel.
 
----
+The database and repository are registered as **singletons** in `MauiProgram.cs` (one shared copy).
+ViewModels are **transient** (a fresh one per screen). `Services/ServiceHelper.cs` fetches them.
 
-## DAY 3 — Community Station Hub + Report Status modal
-
-**Goal:** The home screen where members see and report live gym equipment status.
-
-### Files and what they do
-- **`ViewModels/BaseViewModel.cs`** — base class for data binding (`SetProperty` raises
-  `PropertyChanged` only when a value really changes).
-- **`ViewModels/CommunityViewModel.cs`** — loads stations from SQLite, filters by category,
-  works out the crowd-density banner, and claims stations. Also contains `CategoryChip`
-  (one filter pill, with `IsSelected` driving the lime highlight).
-- **`Views/CommunityPage.xaml` / `.cs`** — the Community Station Hub (screen 2.0):
-  - **Top bar**: "LiftLife" + "📍 UNITEN Gymnasium"
-  - **Crowd density banner**: e.g. "GYM DENSITY: QUIET (33%) — 2 of 6 working stations in
-    use", with a progress bar. Calculated as busy ÷ working stations (broken ones excluded).
-  - **Filter chips**: All / Benches / Cables / Machines / Squat Racks (tap gesture).
-  - **Station cards**: name, who reported it and when, coloured status badge.
-  - **Main button changes with status**: FREE → *Claim Station* (marks it busy by "You");
-    BUSY → *Station Busy? Swap*; OUT OF ORDER → *Find Alternative*. Swap runs the
-    swap engine and lists same-muscle exercises using different equipment, with
-    "Free in Gym" tags, then shows the form cue for the one you pick.
-  - **Update Status** button opens the report modal.
-  - **Pull down to refresh** (RefreshView gesture).
-- **`Views/ReportStatusPage.xaml` / `.cs`** — Report Status modal (screen 2.1): close (✕),
-  station name, three tappable options (Available / Busy / Out of Order, the selected one
-  gets a lime border), a note field, and **Submit**. Validation: Out of Order requires a
-  note. Saving writes to SQLite, gives a haptic tap, and refreshes the hub.
-- **`Converters/StatusConverters.cs`** — value converters that turn a `StationStatus` into
-  the badge colour (green / red / grey) and its text colour.
-- **`Models/Station.cs`** — added `DetailLine` and `PrimaryActionText` display helpers.
-- **`Data/LiftLifeRepository.cs`** — added `GetAlternativesForStationAsync` (swap from the
-  hub) and improved the density calculation.
-
-### Likely questions & my answers
-- **Q: How does the badge change colour?** The badge's `BackgroundColor` is bound to the
-  station's `Status` through `StatusToColorConverter`, which returns green, red or grey.
-- **Q: How does the filter work?** Tapping a chip calls `SelectCategoryAsync`, which marks
-  that chip selected (a `DataTrigger` turns it lime) and reloads stations with a SQL
-  `WHERE Category = ?` filter.
-- **Q: What happens when I submit a report?** `UpdateStationStatusAsync` updates the row
-  (status, note, reported by, time) in SQLite, then the hub reloads from the database.
-- **Q: Which gestures / MAUI APIs are used?** Tap gestures (chips, report options),
-  pull-to-refresh, haptic feedback (`HapticFeedback`), modal navigation, alerts/action sheets.
+### Styles
+- **`Resources/Styles/Colors.xaml`** — lime accent `#E9F558` (from the logo), near-black background
+  `#0B0B0F`, dark cards, status colours (green free, red busy, grey out of order), macro colours.
+- **`Resources/Styles/LiftLifeStyles.xaml`** — shared styles: `Card`, `ScreenTitle`, `CardTitle`,
+  `PrimaryButton`, `DarkButton`, `OutlineButton`, `FieldBox`, text styles.
+- `MauiProgram.cs` removes the iOS native text-field border so the rounded input boxes don't get a
+  double border.
 
 ---
 
-## DAY 4 — Workout Routine Hub + Routine Builder
+## Data layer (SQLite)
 
-**Goal:** Let members build and manage their own workout routines.
+### Tables (`Models/`, each marked `[Table("...")]`)
+| Table | Model | What it holds |
+|---|---|---|
+| `stations` | `Station` | gym machine, category, status, note, reported by/at, `ClaimedByMe` |
+| `station_reports` | `StationReport` | every status change (the maintenance log) |
+| `station_queue` | `StationQueueEntry` | members waiting for a busy machine |
+| `exercises` | `Exercise` | exercise catalogue with **muscle group** and **equipment** |
+| `routines` / `routine_exercises` | `Routine`, `RoutineExercise` | saved routines and their exercises (sets, reps, rest, setup note, order) |
+| `workout_sessions` / `set_logs` | `WorkoutSession`, `SetLog` | finished workouts and each set (kg × reps) |
+| `foods` / `meal_logs` | `FoodItem`, `MealLog` | food list and foods logged per date and meal |
+| `user_settings` | `UserSettings` | macro targets, rest-day factors, member name, last training date |
 
-### Files and what they do
-- **`ViewModels/WorkoutsViewModel.cs`** — loads routines (with exercise counts) and the most
-  recent completed session; deletes routines.
-- **`Views/WorkoutsPage.xaml` / `.cs`** — Workout Routine Hub (screen 3.0):
-  - Title "Workout Routines" + **+ New** button
-  - **Last session card**: "Yesterday: Pull Day B • 5,420 kg logged" (from `workout_sessions`)
-  - **Routine cards**: name, muscle focus, "5 exercises • Estimated: 50 mins",
-    **START WORKOUT SESSION** and **Edit** buttons
-  - **Swipe left to delete** (SwipeView gesture) with a confirmation dialog
-  - Pull to refresh
-  - *Start Workout Session* opens the live session tracker (built on Day 5).
-- **`ViewModels/RoutineBuilderViewModel.cs`** — create/edit logic: name, focus, time,
-  add / remove / reorder exercises, and **validation** before saving (name required, time
-  5–240 min, at least one exercise, sets 1–10, reps 1–50, rest 0–600 s).
-- **`Views/RoutineBuilderPage.xaml` / `.cs`** — Routine Builder (screen 4.1):
-  - routine name, muscle focus, estimated time fields
-  - each exercise card: number, name, muscle • equipment, **↑ move up**, **✕ remove**,
-    editable **Sets / Reps / Rest** and a **setup note** (e.g. "seat height 4")
-  - **+ Add Exercise**: a two-step picker (choose muscle group, then exercise)
-  - **Save** (top bar or bottom button) → saves to SQLite and returns to the hub
-- **`Data/LiftLifeRepository.cs`** — added `GetRoutineAsync` and
-  `ReplaceRoutineExercisesAsync` (saves the exercise list in its current order).
-- **`Data/LiftLifeDatabase.cs`** — seeds a second routine (**Pull Day B**) and one completed
-  past session so the history card has data on first launch.
-- **`Models`** — `RoutineExercise.Position` (1, 2, 3…) and `WorkoutSession.HistoryText`.
-- **`MauiProgram.cs`** — registered the new ViewModels, and removed iOS's built-in text-field
-  border so the custom rounded input boxes look clean.
+`Enums.cs` holds `StationStatus`, `DayType` and `MealCategory`.
 
-### Likely questions & my answers
-- **Q: How are edits in the text boxes saved?** The Entries are two-way bound to the
-  exercise objects (`TargetSets`, `TargetReps`...). Nothing touches the database until
-  **Save**, which validates everything first.
-- **Q: How is exercise order stored?** Each `routine_exercises` row has an `OrderIndex`. On
-  save, the old rows for that routine are deleted and the list is re-inserted in its current
-  order — simple and always correct.
-- **Q: Why does the list refresh after saving?** Going back triggers the hub's `OnAppearing`,
-  which reloads routines from SQLite.
+### `Data/LiftLifeDatabase.cs`
+- Opens `liftlife.db3` in `FileSystem.AppDataDirectory` (the app's private storage).
+- `GetConnectionAsync` creates the connection the first time it's needed, runs `CreateTableAsync<T>()`
+  for every model (this also adds new columns to older databases), then seeds sample data.
+- A `SemaphoreSlim` lock makes sure two screens loading at once can't create or seed the database twice.
+- Seed methods check first, so sample data is only added once: exercises, 7 stations, station report
+  history, queues, two routines (Push Day A, Pull Day B), past workouts with real sets, foods, meals
+  for today and yesterday. `SeedLocalFoodsAsync` adds any food name that's missing, so new foods also
+  reach older databases.
+- `ResetAsync` closes the connection and deletes the file. The next query rebuilds everything.
+
+### `Data/LiftLifeRepository.cs`
+All data operations, so pages never write SQL themselves. Each screen section below names the methods it uses.
+
+### Likely questions
+- **Where is data stored?** In the SQLite file `liftlife.db3` in the app's private storage. It works
+  offline and survives restarts.
+- **Why a repository?** All data logic is in one place, pages stay simple, and it's easy to explain.
+- **How can you prove it's saved?** Open the file in DB Browser for SQLite and show the rows, or show the
+  live row counts on the About page.
 
 ---
 
----
+## 1.0 Splash screen, icon and navigation
 
-## DAY 5 — Active Workout Session, Quick Swap, Form Guide, Workout Summary
+**What it shows:** the lime "L" squircle logo, "LiftLife", "Community Gym Hub" and the slogan
+"Smart Community & Digital Innovation". After about 2 seconds it opens the tabbed app.
 
-**Goal:** The live training experience — log sets in the gym, rest between them, swap
-exercises when a station is busy, and see results that feed into nutrition.
+**Files**
+- **`Resources/AppIcon/appicon.svg` + `appiconfg.svg`** — the app icon (dark background, lime "L").
+  MAUI's Resizetizer makes every icon size iOS needs.
+- **`Resources/Splash/splash.svg`** — the launch image iOS shows first. Same logo as the icon.
+- **`Resources/Images/logo.svg`** — the same logo, shown on the in-app splash page.
+- **`Views/SplashPage.xaml` / `.cs`** — the splash screen. `OnAppearing` waits with
+  `await Task.Delay(2000)`, then sets `Application.Current.Windows[0].Page = new AppShell()`.
+- **`AppShell.xaml`** — a `TabBar` with four `ShellContent` tabs and the icons in
+  `Resources/Images/tab_*.svg`. The selected tab is lime.
 
-### Flow
-Workouts tab → **START WORKOUT SESSION** → Active Session (3.1)
-→ *Station Busy? Swap* opens Quick Swap (4.3) / *(?) Form Guide* opens Form Guide (4.4)
-→ **Finish** → Workout Summary (4.5) → **Done** → back to Workouts (history now says "Today: …").
+**Navigation between screens:** sub-screens open with `Navigation.PushAsync` (full pages such as
+Routine Builder and Station Log) or `PushModalAsync` (sheets such as Report Status, Quick Swap,
+Form Guide and Add Food).
 
-### Files and what they do
-- **`ViewModels/ActiveWorkoutViewModel.cs`** — the session "engine":
-  - `SessionExercise` (one exercise with its own sets) and `SessionSet` (one row:
-    SET / PREV / KG / REPS / DONE).
-  - **Loading:** reads the routine's exercises, and for each one the sets from the **last time
-    you did it** (`GetPreviousSetsAsync`). That fills the PREV column and pre-fills the weight;
-    reps are pre-filled from the routine target.
-  - **Timer:** one `IDispatcherTimer` ticking every second drives both the elapsed clock and
-    the **rest countdown**.
-  - **Ticking DONE** validates the weight (0–500 kg) and reps (1–100), locks the row, adds to
-    the volume total, and starts the rest timer for that exercise's rest time. When rest hits
-    zero the phone **vibrates** (`Vibration` API) and gives a **haptic** pulse.
-  - **+ Add Set** copies the last row. **+15s / Skip** adjust the rest.
-  - **Swap:** replaces the current exercise. Sets already ticked stay logged under the
-    original exercise; only the remaining sets move over, and the clock keeps running.
-  - **Finish:** checks for **personal records** (compared with older history, before saving),
-    saves the session + all ticked sets to SQLite, then triggers the training-day macros.
-- **`Views/ActiveWorkoutPage.xaml` / `.cs`** — screen 3.1: Cancel / Finish bar, clock and live
-  volume, progress bar, the exercise card, set table, + Add Set, Previous / Next, and a
-  **floating rest-timer pill**. Gestures: tap the DONE box, **swipe the card left/right** to
-  change exercise. Uses `DeviceDisplay.KeepScreenOn` so the phone doesn't sleep mid-workout.
-  Cancel asks before discarding; Finish warns about unticked sets.
-- **`ViewModels/QuickSwapViewModel.cs` + `Views/QuickSwapPage`** — screen 4.3: "Target: Chest
-  (Same Mechanics)" tag, substitutes from the swap engine with **your PR** and a **Free in Gym**
-  tag (best option pre-selected), a **scope switch** (off = this session only, on = update the
-  routine permanently), and **Confirm Exercise Swap**.
-- **`Views/FormGuidePage`** — screen 4.4: a **looping tempo animation** (lime bar moves down
-  2s, pauses, up 1s, counting reps — MAUI `TranslateToAsync` animation), the exercise's
-  **key form cues** as a checklist, **equipment-specific safety checks**, and your setup note.
-- **`Models/WorkoutSummary.cs` + `Views/WorkoutSummaryPage`** — screen 4.5: total volume,
-  duration, sets, exercises, a **Training Day** card showing how the targets changed
-  (e.g. Calories 2,082 → 2,450 kcal, Carbs 196 → 280 g), and each exercise with a **NEW PR**
-  badge when you beat your record.
-- **`Data/LiftLifeRepository.cs`** — added `GetPreviousSetsAsync`, `GetPersonalRecordAsync`,
-  `UpdateRoutineExerciseAsync` (permanent swap) and `ActivateTrainingDayAsync`.
-- **`Models/Nutrition.cs`** — `UserSettings` now remembers `LastTrainingDate`, so the app knows
-  today is a training day.
-- **`Data/LiftLifeDatabase.cs`** — seeds two past Push Day A sessions with real sets, so PREV
-  values and PRs show on first launch.
-- **`Resources/Styles/LiftLifeStyles.xaml`** — the `FieldBox` input style moved here so all
-  screens share it.
-
-### Likely questions & my answers
-- **Q: How does the rest timer work?** A single 1-second `IDispatcherTimer`. Each tick updates
-  the clock; if resting, it counts down. At zero it calls `Vibration.Default.Vibrate` and
-  `HapticFeedback`, shows "Rest over", then hides the pill after 3 seconds.
-- **Q: Where does PREV come from?** The `set_logs` table: the sets from the most recent session
-  that included this exercise.
-- **Q: How is a PR detected?** Before saving, the best set (heaviest, then most reps) is compared
-  with the best set ever logged for that exercise. Higher weight, or same weight with more reps,
-  is a new PR.
-- **Q: What does "update routine permanently" do?** It changes the `ExerciseId` in that
-  routine's `routine_exercises` row, so next time the routine starts with the substitute.
-- **Q: How do workouts affect nutrition?** Finishing saves today's date as `LastTrainingDate`
-  and sets the day to Training, which raises calories and carbs back to the full targets.
-  The Nutrition tab (Day 6) reads these.
-- **Q: What if I cancel?** Nothing is saved — the session is only written to the database on Finish.
+**Likely questions**
+- **How does the splash move on by itself?** A 2-second `Task.Delay` in `OnAppearing`, then the window's
+  page is replaced with `AppShell`.
+- **Why a dark theme?** High contrast for quick glances in a gym, and it matches the lime logo.
 
 ---
 
----
+## 2.1 Community Station Hub
 
-## DAY 6 — Daily Nutrition Hub, Food Search & Log, Custom Food, Macro Targets
+**What it shows**
+- Top bar: "LiftLife" and "📍 UNITEN Gymnasium".
+- **Gym density banner** on the UNITEN Gymnasium photo, e.g. "QUIET (33%) • 2 of 6 stations in use •
+  3 members in queues", with a progress bar. Density = busy ÷ working stations (broken ones excluded).
+  A dark `LinearGradientBrush` over the photo keeps the text readable.
+- **Filter chips:** All / Benches / Cables / Machines / Squat Racks.
+- **Station cards:** name, who reported it and when, a coloured status badge.
+- The main button depends on the status:
+  - FREE → **Claim Station** (asks for your member name the first time)
+  - claimed by you → **I'm Done • Release**
+  - BUSY → **Station Busy? Swap** and **Join Queue** / **Leave Queue**
+  - OUT OF ORDER → **Find Alternative**
+- **Update Status** opens the report sheet. Tapping the top of a card opens the Station Log.
+- **Pull down to refresh.**
+- A Busy report older than 45 minutes shows **BUSY?** and "may be free now", so old reports don't block people.
 
-**Goal:** Track daily eating against targets that adapt automatically to training vs rest days.
+**Machine queues**
+- A busy card shows "👥 2 waiting • about 24 min if you join". Joining shows "You're #3, about 24 min".
+- When the machine is free, the card shows "👥 Next up: Imran". If you claim it while someone else is
+  next, the app asks you to confirm first. Claiming removes you from that queue.
+- Out of Order clears the queue. Entries expire after 2 hours.
 
-### Flow
-Nutrition tab (4.0) → **+ Add Food** on a meal → Food Search & Log sheet (5.1)
-→ *+ Create Custom Food* → Custom Food Creator (5.2) → saved and auto-selected → **Log Food**.
-Nutrition tab → **Edit targets ›** → Macro Targets (6.2).
+**Files**
+- **`ViewModels/CommunityViewModel.cs`** — loads and filters stations, works out density, claim and
+  release, `ToggleQueueAsync`. Also contains `CategoryChip` (one filter pill with `IsSelected`).
+- **`Views/CommunityPage.xaml` / `.cs`** — the layout, plus the dialogs and navigation.
+- **`Models/Station.cs`** — display helpers: `StatusLabel`, `DetailLine`, `PrimaryActionText`, `IsStale`
+  (`StaleAfterMinutes = 45`), queue text (`MinutesPerMember = 8`).
+- **`Models/StationQueueEntry.cs`** — station, member, join time, `IsMe` (`ExpireAfterMinutes = 120`).
+- **`Converters/StatusConverters.cs`** — status → badge colour and text colour.
+- **`Services/MemberNamePrompt.cs`** — asks for your name once and saves it in `UserSettings.MemberName`.
+- **Repository:** `GetStationsAsync` (with category filter), density calculation,
+  `UpdateStationStatusAsync`, `GetAlternativesForStationAsync`, `JoinQueueAsync`, `LeaveQueueAsync`,
+  `GetQueueAsync`, `GetWaitingCountAsync`.
 
-### The adaptive logic (the key idea)
-- A date is a **Training Day** if a workout was **completed** on that date
-  (`IsTrainingDayAsync` checks the `workout_sessions` table). Otherwise it's a **Rest Day**.
-- `UserSettings.TargetsFor(isTrainingDay)`:
-  - Training day → full baseline: 2,450 kcal, P185, C280, F65
-  - Rest day → calories × 85% and carbs × 70% (2,082 kcal, C196); protein and fat unchanged
-- So finishing a workout (Day 5) instantly flips today's badge to **⚡ TRAINING DAY ACTIVE** and
-  raises the targets — no manual switch needed.
+**The swap engine (key idea)**
+Every exercise has a `MuscleGroup` and an `Equipment` type. For a busy station, the repository finds other
+exercises for the **same muscle group** that use **different equipment**, then checks the live station
+statuses. If a station for that equipment is free, the option is tagged "Free in Gym". So the suggestion
+trains the same muscle and uses equipment that's actually available. It all runs locally in SQLite.
 
-### Files and what they do
-- **`ViewModels/NutritionViewModel.cs`** — loads the selected date: day type, targets, logged
-  meals, totals. Contains `MacroProgress` (one macro bar: text, progress, over-target flag) and
-  `MealSection` (Breakfast / Lunch / Dinner / Snacks with their items and kcal total).
-- **`Views/NutritionPage`** — screen 4.0:
-  - **‹ Today ›** date switcher (can't go into the future); **swipe the summary card** left/right
-    to change day too
-  - Day badge (lime = Training, blue = Rest), **Edit targets ›**
-  - Calorie meter + "kcal remaining" (turns **red when over** target)
-  - Protein / Carbs / Fat bars (blue / lime / orange)
-  - Meal cards: each food with servings, macros and kcal. **Tap** a food to change the amount
-    (prompt), **swipe left** to delete. **+ Add Food** opens the search sheet for that meal.
-- **`ViewModels/FoodLogViewModel.cs` + `Views/FoodLogPage`** — screen 5.1: meal chips,
-  **search as you type** over the local catalogue, tap to select (lime border, CollectionView
-  selection), a servings **Stepper** (0.5–20) with a live kcal/macro preview, **Log Food**.
-- **`ViewModels/CustomFoodViewModel.cs`** — screen 5.2, now the **Quick Add** tab on the Add Food
-  sheet (see "Feedback changes" below). Shows whether the macros add up (4/4/9 kcal per gram).
-- **`ViewModels/TargetSetupViewModel.cs` + `Views/TargetSetupPage`** — screen 6.2: baseline
-  targets, rest-day calorie % and carb % steppers, macro sanity check, a live **preview of both
-  days**, Save (with validation) and Reset to Defaults.
-- **`Models/Nutrition.cs`** — `MealLog.From(food, qty, meal, date)` builds a log entry with
-  macros × servings; `MealLog` now stores the serving text; `MacroTargets` record;
-  `UserSettings.TargetsFor(...)`.
-- **`Data/LiftLifeRepository.cs`** — `LogFoodAsync`, `UpdateMealQuantityAsync`,
-  `FoodNameExistsAsync`, `IsTrainingDayAsync`.
-- **`Data/LiftLifeDatabase.cs`** — seeds meals for today (rest day) and yesterday (training
-  day) so both day types can be shown in the demo.
-- **`Services/NumberInput.cs`** — shared helper to read numbers from text boxes ("80,5" works).
-- **`Resources/Styles/Colors.xaml`** — macro colours and the rest-day blue.
-
-### Likely questions & my answers
-- **Q: How does the app know it's a training day?** It checks SQLite for a workout session
-  completed on that date. Finish a workout and the Nutrition tab switches by itself.
-- **Q: Why do only calories and carbs drop on rest days?** Carbs fuel training, so they're cut
-  when you don't train; protein and fat stay the same to support muscle recovery.
-- **Q: What's stored when I log food?** A `meal_logs` row: date, meal, food, servings, and the
-  calories/macros already multiplied by servings — so editing or deleting a food later doesn't
-  change past days.
-- **Q: How is the calorie check on custom food done?** protein × 4 + carbs × 4 + fat × 9; if that
-  is more than 20% away from the calories typed in, a warning shows.
-- **Q: Which gestures / APIs are used here?** Tap (items, chips, date arrows), swipe gesture
-  (change day), SwipeView (delete), Stepper, prompt dialog, modal sheets, CollectionView selection.
+**Likely questions**
+- **How does the badge change colour?** `BackgroundColor` is bound to `Status` through
+  `StatusToColorConverter`, which returns green, red or grey.
+- **How does the filter work?** Tapping a chip calls `SelectCategoryAsync`. A `DataTrigger` turns the
+  selected chip lime, and the stations reload with `WHERE Category = ?`.
+- **How is the queue order decided?** First come, first served: sorted by `JoinedAt`, position = index + 1.
+- **How is the wait estimated?** People ahead of you × 8 minutes.
+- **How does Release know it's my station?** `ClaimedByMe` is set only when you claim. Any other update sets it back to false.
+- **Is the data shared between phones?** Not yet. It's an offline prototype on one device. The report
+  structure (who, what, when) is ready to sync to an online database later.
 
 ---
 
-## DAY 7 — Community upgrades, About page, polish
+## 3.1 Report Status
 
-**Goal:** Finish the proposal's "Maintenance Log" feature, make reports feel like a real
-community, and complete the About / settings page.
+**What it shows:** close (✕), the station name, three options (Available / Busy / Out of Order, the
+selected one gets a lime border), a note field and **Submit**.
 
-### Community upgrades
-- **Maintenance log** — `Models/StationReport.cs` is a new `station_reports` table. Every status
-  change (report, claim, release) now **adds a row** instead of only overwriting the station, so
-  the full history is kept. Tap the top of any station card → **Station Log** page
-  (`Views/StationDetailPage`, `ViewModels/StationDetailViewModel.cs`): current status,
-  "3 reports in the last 30 days • 2 fault reports", **Update Status**, and the history newest
-  first with coloured dots. The seed data includes a believable history (e.g. Squat Rack #1:
-  busy → reported broken by Aina → confirmed by Staff).
-- **Member name** — asked once the first time you claim or report (`Services/MemberNamePrompt.cs`),
-  saved in `UserSettings.MemberName`, and shown on reports ("Reported by Hilman"). Change it on
-  the About page.
-- **Claim → I'm Done • Release** — claiming sets `Station.ClaimedByMe`; the card then says
-  "In use by you" and the button becomes **I'm Done • Release**, which frees the station for others.
-- **Stale reports** — a "Busy" report older than 45 minutes shows **BUSY?** and
-  "may be free now" (`Station.IsStale`), so old reports don't block people.
+**Files:** `Views/ReportStatusPage.xaml` / `.cs`. Saving calls `UpdateStationStatusAsync`.
 
-### About LiftLife page (screens 5.0 / 6.1)
-`Views/AboutPage`, `ViewModels/AboutViewModel.cs`:
-- **Release card** — logo, name, tagline, **version read with the `AppInfo` API**
-  ("Version 1.0.0 (Build 1)" comes from the .csproj), course theme, and **device info from the
-  `DeviceInfo` API** ("Running on iOS 27.2 • Phone (Simulator)")
-- **Developer details** — name, student ID, programme, university, course
-- **Application overview** and **key features**
-- **Local storage** — the SQLite file name and size, and **live row counts per table**
-  (stations, reports, routines, workouts, sets, foods, meals)
-- **Profile & settings** — member name (Change), **Macro Targets ›**
-- **Reset Demo Data** — deletes the database file (with confirmation) and recreates the sample data
+**Rules**
+- **Out of Order needs a note** (e.g. "Pulley cable snapped"). Submitting without one shows an alert.
+- Saving updates the station row, **adds a row to `station_reports`**, clears the queue if the machine is
+  broken, gives a haptic tap and refreshes the hub.
 
-### Robustness / polish
-- `LiftLifeDatabase.GetConnectionAsync` now uses a lock (`SemaphoreSlim`) so two screens loading at
-  the same time can't create or seed the database twice; `ResetAsync` uses the same lock.
-- `Services/TimeText.cs` — shared "2m ago" / "Today 2:14 PM" labels.
-- README updated with features, screens, project layout and run steps.
-
-### Verified
-Built with no errors or warnings. Checked on the iPhone 17 simulator: Community card with
-**I'm Done • Release** after a claim, the Squat Rack #1 Station Log, and the About page. Queried
-the SQLite file after **Reset Demo Data**: 7 stations, 15 station reports, 14 meal entries,
-30 sets — and the earlier claim was gone, confirming a clean reseed.
-
-### Likely questions & my answers
-- **Q: Where is the maintenance log stored?** In `station_reports`. `UpdateStationStatusAsync`
-  updates the station row *and* inserts a report row in one method.
-- **Q: How does Release know it's my station?** The `ClaimedByMe` column is set to true only when
-  you claim it; any other update (by anyone) sets it back to false.
-- **Q: How is the version shown?** `AppInfo.Current.VersionString` and `BuildString`, which read
-  `ApplicationDisplayVersion` and `ApplicationVersion` from `LiftLife.csproj`.
-- **Q: What does Reset Demo Data do?** Closes the SQLite connection, deletes `liftlife.db3`, and
-  the next query recreates the tables and seeds sample data again.
-- **Q: Is the community data shared between phones?** Not yet — it's an offline-first prototype
-  on one device. The report structure (who, what, when) is ready to sync to an online database
-  such as Firebase as a future step.
+**Likely question:** **What happens when I submit?** `UpdateStationStatusAsync` updates the station (status,
+note, reported by, time) and inserts a report row in the same method. The hub then reloads from SQLite.
 
 ---
 
-## Suggested demo flow (≈ 10 minutes)
-1. **Launch** → splash with logo → Community tab.
-2. **Community:** density banner, filter chips, claim a free station (enter your name) →
-   "I'm Done • Release". Report a broken machine (note required). Tap the station → Station Log.
-   Tap **Station Busy? Swap** on a busy bench.
-3. **Workouts:** + New → build a routine (validation), or Edit Push Day A. Start Push Day A:
-   PREV values, tick sets → rest timer, Station Busy? Swap (PRs, scope switch), Form Guide
-   animation, Finish → Summary with NEW PR and **Training Day activated**.
-4. **Nutrition:** today now shows **⚡ TRAINING DAY ACTIVE** with higher targets. Add Food → search →
-   servings → Log. Create a custom food. Tap an item to change the amount, swipe to delete.
-   Go back to Yesterday. Edit targets → preview.
-5. **About:** version and device info, developer details, storage counts (they've grown from the
-   demo), change name, Reset Demo Data.
+## Station Log (maintenance history + queue)
+
+Added after M2 to complete the "Maintenance Log" feature from my M1 proposal.
+
+**What it shows:** current status, "3 reports in the last 30 days • 2 fault reports", **Update Status**,
+the queue in order with join times plus Join/Leave, and the report history (newest first, coloured dots).
+Example from the sample data: Squat Rack #1 was busy, then reported broken by Aina, then confirmed by Staff.
+
+**Files:** `Views/StationDetailPage`, `ViewModels/StationDetailViewModel.cs`, `Models/StationReport.cs`.
+
+**Likely question:** **Where is the maintenance log stored?** In `station_reports`. Every status change
+(report, claim, release) adds a row, so the history is kept instead of overwritten.
+
+---
+
+## 2.2 Workout Routine Hub
+
+**What it shows**
+- "Workout Routines" and a **+ New** button.
+- **Last session card**: "Yesterday: Pull Day B • 5,420 kg logged" (from `workout_sessions`).
+- **Routine cards**: name, muscle focus, "5 exercises • Estimated: 50 mins", **START WORKOUT SESSION** and **Edit**.
+- **Swipe left to delete** a routine (SwipeView), with a confirmation dialog. Pull to refresh.
+
+**Files:** `ViewModels/WorkoutsViewModel.cs`, `Views/WorkoutsPage.xaml` / `.cs`,
+`WorkoutSession.HistoryText`.
+
+**Likely question:** **Why does the list update after saving a routine?** Coming back runs the hub's
+`OnAppearing`, which reloads routines from SQLite.
+
+---
+
+## 4.1 Routine Builder
+
+**What it shows:** routine name, muscle focus and estimated time. Each exercise card has its number,
+name, muscle • equipment, **↑ move up**, **✕ remove**, editable **Sets / Reps / Rest** and a **setup
+note** (e.g. "seat height 4"). **+ Add Exercise** is a two-step picker (muscle group, then exercise).
+**Save** is in the top bar and at the bottom.
+
+**Files:** `ViewModels/RoutineBuilderViewModel.cs`, `Views/RoutineBuilderPage.xaml` / `.cs`.
+Repository: `GetRoutineAsync`, `ReplaceRoutineExercisesAsync`.
+
+**Validation before saving:** name required, time 5–240 min, at least one exercise, sets 1–10,
+reps 1–50, rest 0–600 s.
+
+**Likely questions**
+- **How are edits saved?** The Entries are two-way bound to the exercise objects. Nothing is written
+  until **Save**, which validates first.
+- **How is the order stored?** Each `routine_exercises` row has an `OrderIndex`. On save, the routine's
+  old rows are deleted and the list is inserted again in its current order.
+
+---
+
+## 4.2 Active Workout Session
+
+**Flow:** Workouts → **START WORKOUT SESSION** → this screen → **Finish** → Workout Summary.
+
+**What it shows**
+- **Cancel** / **Finish** bar.
+- Two large stat boxes: **WORKOUT TIME** (lime, 32 pt bold) and **TOTAL VOLUME**.
+- A progress bar and the exercise card: "1/5: Barbell Bench Press", **(?) Form Guide**,
+  **Station Busy? Swap**, and a **⏱ Rest 1:30** button.
+- Set table: SET / PREV / KG / REPS / DONE. PREV comes from the last time you did the exercise. KG is
+  pre-filled from it and REPS from the routine target. **+ Add Set** copies the last row.
+- **Previous / Next**, or **swipe the card left/right** to change exercise.
+- A floating **rest bar** with **−15s / +15s / Skip**. When rest ends it turns green and says
+  "Rest over — next set!".
+
+**How it works (`ViewModels/ActiveWorkoutViewModel.cs`)**
+- `SessionExercise` is one exercise with its sets. `SessionSet` is one row.
+- Loading reads the routine's exercises and, for each, the sets from the last session that included it
+  (`GetPreviousSetsAsync`).
+- **One timer:** an `IDispatcherTimer` ticking every second drives the workout clock and the rest countdown.
+- **Ticking DONE** checks weight (0–500 kg) and reps (1–100), locks the row, adds to total volume and
+  starts the rest countdown for that exercise.
+- **Rest controls:** `AdjustRestTime` (±15 s; reaching zero ends the rest) and `SkipRest`.
+- **Custom rest per exercise:** the ⏱ button offers 30 s–5 min or a typed time ("75", "1:45", "2m",
+  parsed by `ParseRestInput`, 10–600 s). `SetRestForCurrentAsync` saves it to that exercise in the
+  routine (`UpdateRoutineExerciseRestAsync`), so the next session remembers it.
+- **Rest alert:** at zero, `Services/RestAlert.cs` plays **three 0.45 s buzzes at full intensity** with
+  iOS **Core Haptics** (`CHHapticEngine`). It works in silent mode. Other platforms fall back to
+  `Vibration`. The "Rest over" bar stays for 3 seconds (`RestDoneHoldSeconds`).
+- **Swap:** sets already ticked stay logged under the original exercise. Only the remaining sets move to
+  the substitute, and the clock keeps running.
+- **Finish** (`FinishAsync`): warns about unticked sets, checks for **personal records** against older
+  history, saves the session and all ticked sets, and calls `ActivateTrainingDayAsync`.
+- **Cancel** asks first, and nothing is saved.
+- `DeviceDisplay.KeepScreenOn` stops the phone sleeping during a workout.
+
+**Files:** `ViewModels/ActiveWorkoutViewModel.cs`, `Views/ActiveWorkoutPage.xaml` / `.cs`,
+`Services/RestAlert.cs`. Repository: `GetPreviousSetsAsync`, `GetPersonalRecordAsync`,
+`UpdateRoutineExerciseRestAsync`, `ActivateTrainingDayAsync`.
+
+**Likely questions**
+- **How does the rest timer work?** One 1-second `IDispatcherTimer`. Each tick updates the clock and,
+  if resting, counts down. At zero it calls `RestAlert`.
+- **Why Core Haptics instead of `Vibration.Vibrate`?** On my iPhone, `Vibration.Vibrate` was one light
+  system buzz that's easy to miss and can be muted. Core Haptics lets me design a stronger pattern and
+  isn't silenced by the mute switch.
+- **Does the alert work with the app closed?** No. The timer runs inside the app, so it only fires while
+  LiftLife is open.
+- **Where does PREV come from?** `set_logs`: the sets from the most recent session that had this exercise.
+- **How is a PR detected?** Before saving, the best set (heaviest, then most reps) is compared with the
+  best set ever logged for that exercise. Higher weight, or the same weight with more reps, is a PR.
+
+---
+
+## 4.3 Quick Swap
+
+**What it shows:** "Target: Chest (Same Mechanics)", substitute exercises with **your PR** and a
+**Free in Gym** tag (best option pre-selected), a **scope switch** (off = this session only, on = update
+the routine permanently) and **Confirm Exercise Swap**.
+
+**Files:** `ViewModels/QuickSwapViewModel.cs`, `Views/QuickSwapPage`. Repository: `GetSwapOptionsAsync`,
+`UpdateRoutineExerciseAsync`.
+
+**Likely question:** **What does "update routine permanently" do?** It changes the `ExerciseId` in that
+routine's `routine_exercises` row, so the routine starts with the substitute next time.
+
+---
+
+## 4.4 Form Guide
+
+**What it shows**
+- A **photo for the exercise's muscle group** (chest, back, legs, shoulders, biceps, triceps) with the
+  muscle and equipment label over it.
+- A **looping tempo animation**: a lime bar moves down for 2 s, pauses, then up for 1 s, counting reps.
+- The exercise's **key form cues** as a checklist, **equipment safety checks**, and your setup note.
+
+**Files:** `Views/FormGuidePage.xaml` / `.cs`, `Services/MuscleImages.cs`.
+
+**Likely questions**
+- **How is the photo chosen?** `MuscleImages.For(exercise.MuscleGroup)` looks up the muscle group in a
+  dictionary and returns the file name. Unknown groups fall back to the gym photo.
+- **How is the animation done?** `LoopTempoAsync` calls `TempoBar.TranslateToAsync` (MAUI animation API)
+  in a loop, and `CancelAnimations` stops it when the page closes.
+
+---
+
+## 4.5 Workout Summary
+
+**What it shows:** total volume, duration, sets and exercises, a **Training Day** card showing how the
+targets changed (e.g. Calories 2,082 → 2,450 kcal, Carbs 196 → 280 g), and each exercise with a
+**NEW PR** badge when you beat your record. **DONE** goes back to the hub, which now says "Today: …".
+
+**Files:** `Models/WorkoutSummary.cs`, `Views/WorkoutSummaryPage`.
+
+**Likely question:** **Why does Back not return to the finished workout?** The summary replaces the session
+page (`Navigation.RemovePage`), so Back goes to the Routine Hub.
+
+---
+
+## 2.3 Daily Nutrition Hub
+
+**The adaptive logic (key idea)**
+- A date is a **Training Day** if a workout was completed on it (`IsTrainingDayAsync` checks
+  `workout_sessions`). Otherwise it's a **Rest Day**.
+- `UserSettings.TargetsFor(isTrainingDay)` in `Models/Nutrition.cs`:
+  - Training day → 2,450 kcal, protein 185 g, carbs 280 g, fat 65 g
+  - Rest day → calories × 0.85 and carbs × 0.70 (2,082 kcal, 196 g carbs). Protein and fat stay the same.
+- Finishing a workout flips today's badge to **⚡ TRAINING DAY ACTIVE** and raises the targets. No manual switch.
+
+**What it shows**
+- **‹ Today ›** date switcher (no future dates). Swiping the summary card also changes day.
+- Day badge (lime = Training, blue = Rest) and **Edit targets ›**.
+- Calorie meter and "kcal remaining" (red when over).
+- Protein / Carbs / Fat bars.
+- Meal cards (Breakfast, Lunch, Dinner, Snacks). **Tap** a food to change the amount, **swipe left** to
+  delete, **+ Add Food** to open the Add Food sheet for that meal.
+
+**Files:** `ViewModels/NutritionViewModel.cs` (with `MacroProgress` and `MealSection`),
+`Views/NutritionPage`. Repository: `IsTrainingDayAsync`, `UpdateMealQuantityAsync`.
+
+**Likely questions**
+- **How does the app know it's a training day?** It checks SQLite for a workout finished on that date.
+- **Why only cut calories and carbs on rest days?** Carbs fuel training. Protein and fat stay the same to
+  support recovery.
+
+---
+
+## 5.1 / 5.2 Add Food: Search and Quick Add
+
+In M2 these were two screens (Food Search, Custom Food Creator). In the app they're **two tabs on one
+sheet**, which is quicker to use.
+
+**🔍 Search Foods (5.1):** meal chips, **search as you type** over the local food list, tap to select
+(lime border), a servings **Stepper** (0.5–20) with a live kcal/macro preview, **Log Food**. If nothing
+matches, a **Quick Add it** button fills in the name you searched.
+
+**✏️ Quick Add (5.2):** type the food name, calories per serving, serving (e.g. "1 plate"), optional
+macros, and servings eaten, then **Log Food**. **Save to My Foods** (on by default) also adds it to the
+food list. Switch it off for a one-off meal. It also shows whether the macros add up (4/4/9 kcal per gram).
+
+The food list includes **17 Malaysian campus foods** (nasi goreng, chicken rice, roti canai, teh tarik,
+milo ais, char kuey teow…).
+
+**Files:** `ViewModels/FoodLogViewModel.cs` (`IsQuickAdd`), `ViewModels/CustomFoodViewModel.cs`
+(`LogAsync`), `Views/FoodLogPage`, `Services/NumberInput.cs` (reads "80,5" too).
+Repository: `LogFoodAsync`, `LogQuickFoodAsync`, `FoodNameExistsAsync`.
+
+**Likely questions**
+- **What's stored when I log food?** A `meal_logs` row: date, meal, food, servings, serving text, and
+  calories/macros already multiplied by servings (`MealLog.From`). Editing the food later doesn't change past days.
+- **What happens to a one-off Quick Add?** It's stored only in `meal_logs` with `FoodId = 0`, so it counts
+  for that day but doesn't clutter the food list.
+- **How is the macro check done?** protein × 4 + carbs × 4 + fat × 9. If that's more than 20% away from
+  the calories typed in, a warning shows.
+
+---
+
+## 6.2 Macro Targets
+
+**What it shows:** baseline calories and macros, rest-day calorie % and carb % steppers, a macro sanity
+check, a live **preview of both day types**, **Save** (with validation) and **Reset to Defaults**.
+Opened from Nutrition (**Edit targets ›**) or the About page.
+
+**Files:** `ViewModels/TargetSetupViewModel.cs`, `Views/TargetSetupPage`, `Models/Nutrition.cs`.
+
+---
+
+## 6.1 About LiftLife (2.4 Profile & Settings)
+
+**What it shows**
+- **Release card:** logo, name, tagline, **version from the `AppInfo` API** ("Version 1.0.0 (Build 1)"),
+  course theme, and **device info from `DeviceInfo`** ("Running on iOS • Phone").
+- **Developer details:** name, student ID, programme, university, course.
+- **Application overview** and key features.
+- **Local storage:** the SQLite file name and size, and **live row counts per table** (`GetStorageStatsAsync`).
+- **Profile & settings:** member name (Change), **Macro Targets ›**.
+- **Credits:** Pexels photos and the UNITEN Gymnasium photo.
+- **Reset Demo Data:** deletes the database (after confirming) and recreates the sample data.
+
+**Files:** `Views/AboutPage`, `ViewModels/AboutViewModel.cs`.
+
+**Likely questions**
+- **How is the version shown?** `AppInfo.Current.VersionString` and `BuildString`, which come from
+  `ApplicationDisplayVersion` and `ApplicationVersion` in `LiftLife.csproj`.
+- **What does Reset Demo Data do?** `ResetAsync` closes the connection and deletes `liftlife.db3`. The next
+  query recreates the tables and seed data.
+
+---
+
+## Images and credits
+
+- **6 Pexels photos** in `Resources/Images/photo_{chest,back,legs,shoulders,biceps,triceps}.jpg`, cropped to
+  16:9 and compressed. Used in the Form Guide. Pexels Licence allows free use in apps.
+- **`photo_uniten_gym.jpg`** — the UNITEN Gymnasium, © Universiti Tenaga Nasional (UNITEN). Used on the
+  Community density banner.
+- `LiftLife.csproj` has `<MauiImage Update="Resources\Images\photo_*.jpg" Resize="false" />` so MAUI copies
+  the photos as they are.
+- Full sources: `docs/MEDIA_CREDITS.md`. Credits also on the About page.
+
+---
+
+## Running on the simulator and my iPhone
+
+- **`./run-sim.sh`** — builds, reinstalls and reopens the app on the iOS simulator, keeping its data.
+  A small change takes about 10 seconds.
+- **`./run-iphone.sh`** — finds the connected iPhone (`xcrun devicectl list devices`), builds for the
+  device (`-p:RuntimeIdentifier=ios-arm64 -p:CodesignKey="Apple Development"`), installs and launches it.
+- **Signing:** a free Apple ID in Xcode created an "Apple Development" certificate and a provisioning
+  profile for `com.hilmanashraf.liftlife` that includes my phone. The .NET build uses the same certificate.
+  Signing settings are passed on the command line, not saved in the `.csproj`, because the certificate
+  name contains my email.
+- **Free profiles expire after 7 days.** To renew: open the Xcode test project, pick the iPhone, press Run
+  once, then `./run-iphone.sh`.
+- The phone has its own database, separate from the simulator. Developer Mode must stay on.
+
+**Why test on the phone:** the simulator can't play haptics or keep the screen on. These device APIs only
+really work on the iPhone.
+
+---
+
+## Changes from my M2 design
+
+| M2 design | In the app | Why |
+|---|---|---|
+| White wireframes | Dark theme with lime accent | Easier to read in a gym, matches the logo |
+| "📍 Campus Gym" | "📍 UNITEN Gymnasium" + real gym photo | Made it specific to UNITEN |
+| Looping MP4 form videos | Muscle-group photo + tempo animation + form cues | Free video sources didn't fit the licence or app size; photos and the animation show the same guidance |
+| Room/SQLite | SQLite only | Room is an Android library. MAUI uses SQLite through `sqlite-net-pcl` |
+| Separate Custom Food Creator (5.2) | Quick Add tab on the Add Food sheet | Fewer steps, and one-off meals don't fill the food list |
+| — | Station Log, machine queues | Completes the maintenance-log feature and handles busy machines |
+| — | Rest −15s / +15s / Skip, custom rest per exercise, Core Haptics alert | From testing on my iPhone |
 
 ---
 
 ## Possible future work
-- Sync stations and reports through Firebase so all members share live status
-- Real looping exercise videos in the Form Guide
+- Sync stations, reports and queues through an online database (e.g. Firebase) so all members share live status
+- A notification when rest ends while the app is in the background
+- Real exercise videos in the Form Guide
 - Charts of volume and nutrition over time
-- **Day 7** — About page, final polish, testing, report
-
----
-
-## Polish — Gym photos (rubric: "suitable images added")
-
-**Goal:** Add real, relevant images to improve Design Attractiveness and the brief's
-"readable content and images" requirement, without cluttering the screens.
-
-### What was added
-- **7 free Pexels photos** in `Resources/Images/` (`photo_*.jpg`), cropped to 16:9 around the
-  person and compressed (about 50–200 KB each). Sources are listed in `docs/MEDIA_CREDITS.md`.
-- **Community tab** — the gym density card now has a gym-floor photo behind it, with a dark
-  gradient on top (`LinearGradientBrush`) so the text stays readable.
-- **Form Guide** — a photo for the exercise's muscle group at the top (chest, back, legs,
-  shoulders, biceps, triceps), with the muscle and equipment label over it.
-- **`Services/MuscleImages.cs`** — maps a muscle group to its photo file; falls back to the gym
-  banner if a group has no photo.
-- **`LiftLife.csproj`** — `Resize="false"` for the photos, so MAUI copies them as they are
-  instead of re-processing them.
-- **About page** — credit line for Pexels.
-
-### Likely questions & my answers
-- **Q: Where do the images come from, and can you use them?** Pexels, under the Pexels Licence,
-  which allows free use in apps without permission. The exact photos are listed in
-  `docs/MEDIA_CREDITS.md`, and the About page credits Pexels.
-- **Q: How does the Form Guide pick the photo?** `MuscleImages.For(exercise.MuscleGroup)` looks
-  the muscle group up in a dictionary and returns the file name, which is set as the `Image` source.
-- **Q: How is the text kept readable on top of a photo?** A `ContentView` with a
-  `LinearGradientBrush` from transparent to almost black sits between the image and the text.
-
----
-
-## Running on my iPhone 14 Pro
-
-**Why:** the simulator can't show haptics, the rest-timer vibration or keep-screen-on. On a real
-phone these MAUI device APIs actually work, which is better for the demo.
-
-### How it works
-- **Signing:** Apple only runs signed apps on real devices. A free Apple ID in Xcode created an
-  "Apple Development" certificate and a provisioning profile for `com.hilmanashraf.liftlife` that
-  includes my iPhone. A .NET MAUI app isn't an Xcode project, but the .NET build uses the same
-  certificate and profile.
-- **`run-iphone.sh`** (repo root) does it in one command:
-  1. finds the connected iPhone with `xcrun devicectl list devices`
-  2. builds for the device: `dotnet build -f net10.0-ios -p:RuntimeIdentifier=ios-arm64 -p:CodesignKey="Apple Development"`
-  3. installs with `xcrun devicectl device install app`
-  4. opens it with `xcrun devicectl device process launch`
-- The signing settings are passed on the command line rather than saved in `LiftLife.csproj`,
-  because the certificate name contains my email address and the repo is public.
-
-### Things to remember
-- **The free profile expires after 7 days** (current one: 24 Nov 2026). The day before the
-  presentation: open the Xcode test project, pick the iPhone, press Run once, then `./run-iphone.sh`.
-- The phone has its **own SQLite database**, separate from the simulator.
-- Developer Mode must stay on (Settings → Privacy & Security → Developer Mode).
-
-### Likely questions & my answers
-- **Q: How did you get it onto your phone without the App Store?** Development signing with a
-  free Apple ID: Xcode made a certificate and a 7-day profile tied to my phone's ID, and the .NET
-  build signs the app with them.
-- **Q: Why does it stop working after a week?** Free Apple ID profiles are only valid for 7 days;
-  a paid developer account gives one year.
-
----
-
-## Feedback changes (after testing on my iPhone)
-
-### 1. Rest time I control
-- During rest, the floating bar has **−15s / +15s / Skip**. Taking the time to zero ends the rest.
-  (`ActiveWorkoutViewModel.AdjustRestTime`, `SkipRest`)
-- Each exercise card has a **⏱ Rest 1:30** button: pick 30 s–5 min or type a custom time
-  ("75", "1:45", "2m"). It's **saved to that exercise in the routine** (`routine_exercises.RestSeconds`),
-  so next session remembers it. (`SetRestForCurrentAsync`, `ParseRestInput`,
-  `LiftLifeRepository.UpdateRoutineExerciseRestAsync`)
-
-### 2. Bigger session stats
-- Two large stat boxes under the header: **WORKOUT TIME** (lime, 32 pt bold) and **TOTAL VOLUME**.
-
-### 3. Rest alert you can actually feel
-- `Services/RestAlert.cs` plays **three strong 0.45 s buzzes** with iOS **Core Haptics**
-  (`CHHapticEngine`, intensity 1.0). Core Haptics still works in silent mode, unlike the normal
-  `Vibration` API, which only gave a light tap on my iPhone. Other platforms fall back to `Vibration`.
-- When rest ends, the bar turns **green** and says "Rest over — next set!".
-- Note: the alert only fires while LiftLife is open on screen (the timer runs in the app).
-
-### 4. Log any food (Quick Add)
-- The Add Food sheet now has two tabs: **🔍 Search Foods** and **✏️ Quick Add**.
-- **Quick Add:** type what you ate, calories per serving, serving (e.g. "1 plate"), optional macros,
-  and servings eaten → **Log Food**. **Save to My Foods** (on by default) also adds it to the food
-  list so it can be searched next time; switch it off for a one-off meal.
-  (`CustomFoodViewModel.LogAsync`, `LiftLifeRepository.LogQuickFoodAsync`)
-- If a search finds nothing, a **Quick Add it** button fills in the name you searched for.
-- The old separate Custom Food screen was removed — Quick Add replaces it.
-- **17 Malaysian campus foods** were added (nasi goreng, chicken rice, roti canai, teh tarik,
-  milo ais, char kuey teow…). `SeedLocalFoodsAsync` only adds names that don't exist yet, so it
-  also updates older databases.
-
-### 5 & 6. UNITEN Gymnasium
-- The density card uses a photo of the **UNITEN Gymnasium** (`photo_uniten_gym.jpg`, © UNITEN,
-  credited on the About page and in `docs/MEDIA_CREDITS.md`), with a
-  stronger dark fade because the photo is bright. The location label now says
-  **📍 UNITEN Gymnasium**.
-
-### 7. Machine queues
-- New table **`station_queue`** (`Models/StationQueueEntry.cs`): station, member, join time, and
-  `IsMe` for this phone's member.
-- **Community card** for a busy machine: "👥 2 waiting • about 24 min if you join" and a
-  **Join Queue (2 waiting)** button → "You're #3, about 24 min". Then it shows your place and a
-  **Leave Queue** button. Estimate = people ahead × 8 min (`Station.MinutesPerMember`).
-- **When the machine is free:** "👥 Next up: Imran". If you claim it while someone else is next,
-  the app asks first. Claiming removes you from that queue.
-- **Out of order** clears the queue. Queue entries **expire after 2 hours**.
-- **Station Log** page shows the queue in order (1, 2, 3…) with join times, plus Join/Leave.
-- The density banner also counts members in queues.
-
-### Verified
-Built with no errors. Checked on a clean simulator, then read the SQLite file directly:
-- queue rows for the sample members and my own join (`IsMe = 1`)
-- a custom rest of "1:45" saved as 105 seconds on Barbell Bench Press
-- Quick Add "Nasi Kerabu" × 1.5 logged as 780 kcal and saved to My Foods
-- a one-off "Kuih Lapis" logged without being added to the food list
-- the new local foods present
-
-### Likely questions & my answers
-- **Q: Why Core Haptics instead of `Vibration.Vibrate`?** On iPhone the standard API plays one
-  short system vibration that can be muted. Core Haptics lets me design a stronger pattern
-  (three long buzzes at full intensity) and it isn't silenced by the mute switch.
-- **Q: How is the queue order decided?** First come, first served: entries are sorted by `JoinedAt`,
-  and the position is the index + 1.
-- **Q: How is the wait time estimated?** Number of people ahead of you × 8 minutes per person.
-- **Q: What happens to a one-off Quick Add food?** It's stored only in `meal_logs` (with `FoodId = 0`),
-  so it counts for that day but doesn't clutter the food list.

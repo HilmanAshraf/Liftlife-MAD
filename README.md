@@ -16,23 +16,23 @@ All data is stored locally and offline using **SQLite**.
 
 ## Core features
 1. **Community station status & maintenance log** — live Free / Busy / Out of Order status,
-   crowd density, claim and release stations, and a per-station report history
+   crowd density, claim and release stations, machine queues, and a per-station report history
 2. **"Crowded gym" swap engine** — same-muscle substitutes using equipment that's free
 3. **Routine builder** — sets, reps, rest and machine setup notes per exercise
-4. **Live workout tracker** — set logging with previous-session values, rest timer with vibration,
-   personal-record detection and a workout summary
-5. **Form guides** — looping tempo animation, form cues and equipment safety checks
+4. **Live workout tracker** — set logging with previous-session values, adjustable rest timer with a
+   Core Haptics alert, personal-record detection and a workout summary
+5. **Form guides** — muscle-group photo, looping tempo animation, form cues and equipment safety checks
 6. **Adaptive nutrition** — training vs rest day targets switch automatically when a workout is
-   finished; food search, logging and custom foods
+   finished; food search, logging and Quick Add for any food
 7. **Local SQLite persistence** — everything works offline
 8. **Splash, About and settings** — app/developer info, storage stats, member name, macro targets
 
 ## Screens
 | Tab | Screens |
 |---|---|
-| Community | Station Hub · Report Status · Station Log |
+| Community | Station Hub · Report Status · Station Log (history + queue) |
 | Workouts | Routine Hub · Routine Builder · Active Session · Quick Swap · Form Guide · Summary |
-| Nutrition | Daily Nutrition · Add Food · Custom Food · Macro Targets |
+| Nutrition | Daily Nutrition · Add Food (Search · Quick Add) · Macro Targets |
 | About | About LiftLife (profile, storage, settings) |
 
 ## Project layout
@@ -47,7 +47,7 @@ LiftLife/
   Services/             Small helpers (DI lookup, number input, time labels, member name)
   Converters/           XAML value converters (status → colour)
   Resources/            Styles, colours, fonts, app icon, splash, images
-docs/PROGRESS_NOTES.md  Day-by-day development log with explanations
+docs/                  Explainer notes, AI use statement, media credits, demo script
 ```
 
 ## Quick run on the simulator (after any code change)
@@ -87,7 +87,19 @@ select the iPhone and press Run once to renew the profile, then run the script a
 To start again with the sample data, use **About → Reset Demo Data**, or uninstall first:
 `xcrun simctl uninstall booted com.hilmanashraf.liftlife`.
 
-See `docs/PROGRESS_NOTES.md` for a day-by-day development log and explanations.
+See `docs/PROGRESS_NOTES.md` for screen-by-screen explanations of the code.
+
+## Documentation
+- `docs/PROGRESS_NOTES.md` — how each screen works, which files it uses, likely questions
+- `docs/AI_USE.md` — how AI was used to build this project
+- `docs/MEDIA_CREDITS.md` — image sources and licences
+- `docs/MOCK_QA.md`, `docs/DEMO_SCRIPT.md` — my presentation practice and demo plan
+
+## AI use
+This project was built with help from **Kiro**, an AI coding assistant. I wrote the M1 proposal and
+M2 design, directed the build in stages, tested every stage on the simulator and my iPhone, and asked
+for changes based on that testing. The AI generated most of the code. Full details, with example
+prompts and the problems found, are in `docs/AI_USE.md`.
 
 ## Developer
 Mohamed Hilman Ashraf Bin Mohamed Ashraf — BSW01085755

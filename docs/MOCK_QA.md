@@ -242,7 +242,7 @@ The rubric expects you to explain how you used AI, so answer openly. If you clai
 then can't explain something, that scores far worse than a clear, honest answer.
 
 **Q: Did you use AI?**
-> "Yes. I used an AI coding assistant, Kiro, in VS Code. I gave it my M1 proposal, M2 screens map and
+> "Yes. I used an AI coding assistant, Kiro, in the Kiro IDE (built on VS Code). I gave it my M1 proposal, M2 screens map and
 > wireframes, and the exam requirements. I asked it to build the app in stages, one feature area at a
 > time, and asked it to keep a notes file explaining each file so I could learn the code. After each
 > stage I tested on the simulator and my iPhone and asked for changes."
